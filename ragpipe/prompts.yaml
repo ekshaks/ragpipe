@@ -1,0 +1,38 @@
+query_decomposer: |
+  Split the following query into plain text and metadata parts in JSON format. The metadata may contain fields like year, price etc. . Output JSON should have following fields: original_query, query_text, metadata.
+
+  # Query
+  {query}
+
+  # JSON representation
+
+qa1: |
+  Below is a query and an article snippet. 
+  - If the snippet can answer the query, reply <answer>YES</answer> else reply <answer>NO</answer>. You MUST reply only with YES or NO.
+  - Also, explain why you think the snippet cannot answer the query. This is MANDATORY.
+  - Do not use any information except that provided in the snippet.
+
+  # query\n\n
+  {query}\n\n
+  # snippet\n\n
+  {snippet}
+
+qa2: |
+    Below is a statement and an article snippet. 
+    - If the statement holds true for the snippet, reply <answer>YES</answer> else reply <answer>NO</answer>.
+    - Also, explain why you think the statements holds true or false for the snippet. This is MANDATORY.
+
+    # statement\n\n
+    {query}\n\n
+    # snippet\n\n
+    {snippet}
+
+
+select_mentions:
+  - |
+    xx
+  - |
+    Below is a list of snippets in the format "1. <text> 2. <text> 3. ....". Select the snippets which mention one or more {query}. Respond with a list of numbers for the selected snippet in the format <answer>1, 3, 4, ...</answer>.
+
+    # Snippets\n\n
+    {snippets}

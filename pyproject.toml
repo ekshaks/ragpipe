@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "ragpipe"
+version = "0.0.1"
+description = "RAG++: bridge query and doc with guidance"
+authors = ["Nishant Sinha <nishant@offnote.co>"]
+license = "Apache 2.0"
+readme = "README.md"
+packages = [{include = "ragpipe"}]
+
+[tool.poetry.dependencies]
+python = ">=3.8.1,<4.0"
+llama-index = ">=0.10.7"
+rank_bm25
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.0.0"
+ipykernel = "^6.29.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

@@ -1,0 +1,17 @@
+topic-split: |
+  Next, I will present you with a lengthy section of "timestamped text," sourced from a video segment. You are required to analyze and summarize the content, "in chronological order," breaking it down into different thematic topics. Then, under each thematic topic, place the corresponding "start and end times" of the timestamps, for example:
+  ```
+  # Topic 1
+  0.0-14.6
+  # Topic 2
+  14.6-22.28
+  # Topic 3
+  start-end
+  ```
+  Determining the start and end, as well as the topics, necessitates a thorough reading of the following text.
+  Here is the text you need to process:
+  ```
+  {context}
+  ```
+  Please directly output the processed result, without any additional analysis:
+
