@@ -1,0 +1,30 @@
+prompts:
+  qa: |
+    Answer the query based on the markdown documents.
+    # query
+
+    {query}
+
+    # documents
+
+    {documents}
+
+representations:
+    query.text:
+        metadata:
+            type: object
+            encoder: llm/query_decomposer
+    .sections[]:
+        _headerpath:
+            type: str
+            encoder: passthrough
+
+bridge:
+    b1:
+        repnodes: query.text#metadata, .sections[]#_headerpath
+        matchfn: examples.billionaires.match_year
+
+
+rank: 
+    expr: b1
+    limit: 10

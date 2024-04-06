@@ -1,0 +1,43 @@
+prompts:
+  qa: |
+    Answer the query based on the markdown document snippets.
+    # query
+
+    {query}
+
+    # documents
+
+    {documents}
+  qa2: |
+    The following are snippets from an insurance policy document in markdown format.
+    # documents
+
+    {documents}
+
+    Answer the following query based on the above document snippets.
+
+    {query}
+    Answer:
+representations:
+    query.text:
+        dense:
+            type: tensor<float>[384]
+            encoder: BAAI/bge-small-en-v1.5
+            #encoder: jinaai/jina-colbert-v1-en
+            #encoder: colbert-ir/colbertv2.0
+    .sections[].node:
+        dense:
+            type: tensor<float>[384]
+            #encoder: jinaai/jina-colbert-v1-en
+            encoder: BAAI/bge-small-en-v1.5
+            #encoder: colbert-ir/colbertv2.0
+
+bridge:
+    b1:
+        repnodes: query.text#dense, .sections[].node#dense
+        limit: 3
+
+
+rank: 
+    expr: b1
+    limit: 10
