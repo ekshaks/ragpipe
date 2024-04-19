@@ -31,10 +31,7 @@ def compute_representations(D, config):
         for repname, properties in C.items():
             #printd(3, f'rep for : {repname}')
             props = DotDict(properties)
-            storage = props.get('storage', None)
-            print(fpath, repname, f': storage={storage}, encoder={props.encoder}')
-
-            rep_path_pairs = compute_rep(fpath, D, props.encoder, repname=repname, is_query=is_query)
+            rep_path_pairs = compute_rep(fpath, D, props=props, repname=repname, is_query=is_query)
             rep_key = hash_field_repname(fpath, repname)
             _reps[rep_key] = rep_path_pairs
         return _reps

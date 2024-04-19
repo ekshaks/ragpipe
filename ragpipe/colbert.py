@@ -58,8 +58,9 @@ class Colbert:
         
         #return sorted_indices
     
-    def compute_similarity_embedding(self, query_embedding, document_embedding):
-            print(query_embedding.shape, document_embedding.shape)
+    def compute_similarity_embedding(self, query_embedding=None, document_embedding=None):
+            printd(2, f'compute_sim_emb: {query_embedding.shape}, {document_embedding.shape}')
+            assert query_embedding is not None and document_embedding is not None
 
             # Query: b,ql,d -> b,ql,1,d
             # D: b,docl,d -> b,1,docl,d
@@ -74,12 +75,14 @@ class Colbert:
             score = torch.mean(max_sim_scores, dim=1) #b (mean over query length)
             return score.item()
 
-    def compute_similarity_embeddings(self, query_embedding, doc_embeddings):
+    def compute_similarity_embeddings(self, query_embedding=None, doc_embeddings=None):
         # Query: 1,ql,d
         # D: [1,docl,d]*
         if self.MAX_LENGTH == 512:
-            scores = [ self.compute_similarity_embedding(query_embedding, demb) for demb in doc_embeddings]
+            scores = [ self.compute_similarity_embedding(query_embedding=query_embedding, document_embedding=demb)
+                       for demb in doc_embeddings]
         else:
+            assert False, 'compute_relevance scores needs debugging'
             #doc_embeddings: 'b,docl,d' = torch.stack(doc_embeddings)
             #scores = self.compute_relevance_scores(query_embedding, doc_embeddings)
             import itertools

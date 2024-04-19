@@ -22,15 +22,16 @@ representations:
     query.text:
         dense:
             type: tensor<float>[384]
-            encoder: BAAI/bge-small-en-v1.5
+            #encoder: BAAI/bge-small-en-v1.5
             #encoder: jinaai/jina-colbert-v1-en
-            #encoder: colbert-ir/colbertv2.0
+            encoder: colbert-ir/colbertv2.0
     .sections[].node:
         dense:
             type: tensor<float>[384]
             #encoder: jinaai/jina-colbert-v1-en
-            encoder: BAAI/bge-small-en-v1.5
-            #encoder: colbert-ir/colbertv2.0
+            #encoder: BAAI/bge-small-en-v1.5
+            encoder: colbert-ir/colbertv2.0
+            storage: true #dbname, path, collection
 
 bridge:
     b1:

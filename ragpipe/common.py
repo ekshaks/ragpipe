@@ -91,3 +91,6 @@ def get_fpath_items(fpath, D):
 
     printd(3, f'get_fpath_items = {type(items)}, {len(items)}')
     return DotDict(els=items, paths=item_paths)
+
+def fpath2collection(fpath, repname):
+    return 'C_' + fpath.replace('[]', '-').replace('.', '_') + f'_{repname}' + '_C'
