@@ -1,6 +1,11 @@
 from typing import List
 from .docnode import DocNode
 
+from llama_index.embeddings.fastembed import FastEmbedEmbedding
+from llama_index.embeddings.clip import ClipEmbedding
+from .colbert import Colbert
+from .common import DotDict
+
 def tokenize_remove_stopwords(text: str) -> List[str]:
     from nltk.stem import PorterStemmer
     # lowercase and stem words
@@ -28,3 +33,28 @@ class BM25:
         node_scores = [DocNode(li_node=x[0], score=x[1]) for x in zip(self.doc_list, scores)]
         nodes_scores_sorted = sorted(node_scores, key=lambda x: x.score or 0.0, reverse=True)
         return nodes_scores_sorted[: top_k]
+    
+
+def get_encoder_index_reptype (encoder_name):
+    index_type = 'rpindex'
+    rep_type = 'single_vector'
+    match encoder_name:
+        case "BAAI/bge-small-en-v1.5":
+            embed_model = lambda: FastEmbedEmbedding(model_name="BAAI/bge-small-en-v1.5")
+            index_type = 'llamaindex'
+        case "colbert-ir/colbertv2.0":
+            embed_model = lambda: Colbert(model=encoder_name, tokenizer=encoder_name)
+            rep_type = 'multi_vector'
+        case "jinaai/jina-colbert-v1-en":
+            embed_model = lambda: Colbert(model=encoder_name, tokenizer=encoder_name, max_length=8192)
+            rep_type = 'multi_vector'
+        
+        case "ViT-B/32":
+            embed_model = lambda: ClipEmbedding(model_name="ViT-B/32")
+            index_type = 'llamaindex'
+        
+        case _:
+            embed_model = lambda: None
+            #raise ValueError(f"unknown encoder: {encoder_name}")
+            
+    return DotDict(index_type=index_type, encoder_model_loader=embed_model, rep_type=rep_type)
