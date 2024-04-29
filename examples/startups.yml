@@ -1,0 +1,51 @@
+qa2: |
+    The following are snippets from an insurance policy document in markdown format.
+    # documents
+
+    {documents}
+
+    Answer the following query based on the above document snippets.
+
+    {query}
+    Answer:
+
+representations:
+    query.text:
+        dense:
+          type: tensor<float>[384]
+          encoder: BAAI/bge-small-en-v1.5
+          #encoder: colbert-ir/colbertv2.0 #sentence-transformers/all-MiniLM-L6-v2
+        sparse:
+          type: sparsetensor<float>
+          encoder: prithivida/Splade_PP_en_v1
+
+    .documents[].description:
+        dense:
+            type: tensor<float>[384]
+            encoder: BAAI/bge-small-en-v1.5
+            #encoder: colbert-ir/colbertv2.0
+            storage: true 
+        sparse:
+          type: sparsetensor<float>
+          encoder: prithivida/Splade_PP_en_v1
+
+bridge:
+  b_dense:
+      repnodes: query.text#dense, .documents[].description#dense
+      limit: 10
+  b_sparse:
+      repnodes: query.text#sparse, .documents[].description#sparse
+      limit: 10
+
+
+merge:
+  c1:
+    expr: b_sparse
+    limit: 10
+  c2:
+    method: reciprocal_rank
+    bridges: b_dense, b_sparse
+    limit: 10
+
+selected_merges: c2
+

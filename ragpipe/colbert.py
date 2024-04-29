@@ -59,7 +59,7 @@ class Colbert:
         #return sorted_indices
     
     def compute_similarity_embedding(self, query_embedding=None, document_embedding=None):
-            printd(2, f'compute_sim_emb: {query_embedding.shape}, {document_embedding.shape}')
+            printd(3, f'compute_sim_emb: {query_embedding.shape}, {document_embedding.shape}')
             assert query_embedding is not None and document_embedding is not None
 
             # Query: b,ql,d -> b,ql,1,d

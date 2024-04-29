@@ -17,7 +17,7 @@ class DotDict(dict):
 DEFAULT_LIMIT=10 #max number of documents returned on match
     
 def printd(N, text):
-    if N >=4: return
+    if N >=3: return
     print(text)
 
 from importlib import import_module
@@ -51,6 +51,14 @@ def compile_jq(expression, data):
             return obj
         key = path[0]
         printd(l1, f'cjq> key = {key}, obj={type(obj)}')
+        '''
+        if isinstance(obj, list):
+            printd(l1, f'obj = {obj[:2]}')
+        if isinstance(obj, str):
+            printd(l1, f'obj = {obj[:20]}')  
+        '''
+
+
         if isinstance(obj, dict):
             if key in obj:
                 return prepend_path(traverse(obj[key], path[1:]), key)
