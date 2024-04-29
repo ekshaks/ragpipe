@@ -26,6 +26,6 @@ bridge:
         matchfn: examples.billionaires.match_year
 
 
-rank: 
+combine: 
     expr: b1
     limit: 10

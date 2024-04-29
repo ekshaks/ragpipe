@@ -7,7 +7,7 @@ Highlights:
 - ragpipe config format - switch limit, prompts
 - (optional) switch from dense to colbert. cutoff difference?
 
-1. fix table labels (policy.mmd -> policy2.mmd)
+1. fix table section labels (niva.mmd -> niva-short.mmd)
 
 relate annexure heading to table
 precise spec - # some tables are labeled properly. use ### label \n\n table
@@ -58,7 +58,7 @@ def main():
     with open('examples/insurance.yml', 'r') as file:
         config = DotDict(yaml.load(file, Loader=yaml.FullLoader))
     
-    D = build_data_model('examples/data/policy2.mmd')
+    D = build_data_model('examples/data/insurance/niva-short.mmd')
     printd(3, 'over build data model')
 
     queries = [

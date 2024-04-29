@@ -36,38 +36,39 @@ def encode_and_index(encoder_name, encoder_model, encoder_props,
         reps_index = RPIndex(encoder_name='bm25', encoder_model=None, storage_config=storage_config)
         reps_index.add(docs=reps, doc_paths=item_paths, is_query=is_query, docs_already_encoded=True)
         index_type = 'noindex'
-    
+    '''
     else:
         if is_query:
             index_type = 'rpindex'
+    '''
 
-        match index_type:
-            case 'llamaindex':
-                assert isinstance(items, list) and len(items) > 0, f"items is {type(items)}"
-                ic = IndexConfig(index_type=index_type, encoder_name=encoder_name, 
-                    doc_paths=item_paths, storage_config=storage_config)
-                reps_index = VectorStoreIndexPath.from_docs(items, ic, encoder_model=encoder_model)
-               
-            case 'rpindex':
-                item_type = type(items[0]).__name__
-                if item_type != 'str': #handle LI text nodes. TODO: what if LI documents?
-                    assert 'TextNode' in item_type, f'Cannot handle item type {item_type}'
-                    items = [item.text for item in items]
+    match index_type:
+        case 'llamaindex':
+            assert isinstance(items, list) and len(items) > 0, f"items is {type(items)}"
+            ic = IndexConfig(index_type=index_type, encoder_name=encoder_name, 
+                doc_paths=item_paths, storage_config=storage_config)
+            reps_index = VectorStoreIndexPath.from_docs(items, ic, encoder_model=encoder_model)
+            
+        case 'rpindex':
+            item_type = type(items[0]).__name__
+            if item_type != 'str': #handle LI text nodes. TODO: what if LI documents?
+                assert 'TextNode' in item_type, f'Cannot handle item type {item_type}'
+                items = [item.text for item in items]
 
-                reps_index = RPIndex(encoder_name=encoder_name, encoder_model=encoder_model, 
-                                     storage_config=storage_config)
-                reps_index.add(docs=items, doc_paths=item_paths, is_query=is_query)
+            reps_index = RPIndex(encoder_name=encoder_name, encoder_model=encoder_model, 
+                                    storage_config=storage_config)
+            reps_index.add(docs=items, doc_paths=item_paths, is_query=is_query)
 
-            case 'objindex':
-                reps_index = ObjectIndex(reps=reps, paths=item_paths, is_query=is_query, 
-                                         docs_already_encoded=True) #
+        case 'objindex':
+            reps_index = ObjectIndex(reps=reps, paths=item_paths, is_query=is_query, 
+                                        docs_already_encoded=True) #
 
-            case 'noindex':
-                pass
-            case _:
-                raise ValueError(f"unknown index: {index_type}")
+        case 'noindex':
+            pass
+        case _:
+            raise ValueError(f"unknown index: {index_type}")
         
-        return reps_index
+    return reps_index
 
 
 def compute_rep(fpath, D, props=None, repname=None, is_query=False) -> '*Index':
@@ -78,7 +79,8 @@ def compute_rep(fpath, D, props=None, repname=None, is_query=False) -> '*Index':
     printd(2, f'props = {props}, storage = {storage}')
   
     ##encoder model loader, index_type, rep_type
-    ei = get_encoder_index_reptype(encoder_name)  #(TODO: avoid loading model)
+    doc_leaf_type = D.get('doc_leaf_type', 'raw')
+    ei = get_encoder_index_reptype(encoder_name, doc_leaf_type=doc_leaf_type)  #(TODO: avoid loading model)
 
     storage_config = None if not storage else StorageConfig(collection_name=fpath2collection(fpath,repname), 
                                                             rep_type=ei.rep_type)
@@ -87,7 +89,7 @@ def compute_rep(fpath, D, props=None, repname=None, is_query=False) -> '*Index':
     index_config = IM.get_config(fpath, repname, encoder_name) if storage_config else None
     if index_config is None:
 
-        printd(2, f'Not found in IndexManager cache: creating index.')
+        printd(2, f'Not found in IndexManager cache: creating reps.')
 
         items_path_pairs = get_fpath_items(fpath, D)
         items, item_paths = items_path_pairs.els, items_path_pairs.paths
@@ -96,6 +98,8 @@ def compute_rep(fpath, D, props=None, repname=None, is_query=False) -> '*Index':
                     storage_config, index_type=ei.index_type, is_query=is_query)
         if storage_config is not None: #does making a query rpindex make sense? change query?
             IM.add(fpath, repname, encoder_name, reps_index)
+        else:
+            printd(2, f'storage_config None - not creating index.')
 
     else:
 
@@ -107,7 +111,7 @@ def compute_rep(fpath, D, props=None, repname=None, is_query=False) -> '*Index':
                 reps_index = RPIndex.from_index_config(index_config)
             case _ :
                 raise ValueError(f'unknown index type {index_config.index_type}')
-
+    #printd(2, f'compute_rep: {fpath} -> {reps_index}')
     return reps_index
 
 def retriever_router(doc_index, query_text, query_index, limit=10): #TODO: rep_query_path -> query_index

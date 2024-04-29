@@ -31,6 +31,8 @@ def compute_representations(D, config):
         for repname, properties in C.items():
             #printd(3, f'rep for : {repname}')
             props = DotDict(properties)
+            build = props.get('build', True)
+            if not build: continue
             rep_path_pairs = compute_rep(fpath, D, props=props, repname=repname, is_query=is_query)
             rep_key = hash_field_repname(fpath, repname)
             _reps[rep_key] = rep_path_pairs
@@ -38,7 +40,7 @@ def compute_representations(D, config):
         
     reps = {} #'Chunk.content' -> dense -> rep=(doc, <vec>)
     #field, rep_name -> (collection_path | rep)
-
+    printd(1, '=== Computing Representations...')
     for field, repC in config.representations.items(): 
         printd(3, f'compute_index: field={field}, config={repC}')
         is_query = 'query' in field
@@ -80,8 +82,9 @@ def compute_bridge_scores(reps, D, bridge_config):
 
 
     from .docnode import ScoreNode
+    printd(1, '\n=== Computing Bridges, Retrieving ...\n')
 
-    docs_retrieved = {}
+    docs_retrieved = {} #bridge name -> List[ScoreNode]
     printd(3, f'bridge config: {bridge_config}')
     printd(3, f'reps keys: {list(reps.keys())}')
 
@@ -93,23 +96,23 @@ def compute_bridge_scores(reps, D, bridge_config):
         limit = props.get('limit') 
         limit = DEFAULT_LIMIT if limit is None else limit
 
-        docs: List[ScoreNode]
-
-        if matchfn_key is not None:
-            rep1 = get_reps(repkey1, reps)
-            rep2 = get_reps(repkey2, reps)
-            matchfn = load_func(matchfn_key)
-            docs: List[ScoreNode] = matchfn(rep1, rep2)
-        else:
-            from .rag_components import retriever_router
-            #https://docs.llamaindex.ai/en/stable/examples/query_engine/CustomRetrievers.html
-            query_index = get_reps(repkey1, reps) 
-            doc_index = get_reps(repkey2, reps)
-            docs: List[ScoreNode] = retriever_router(doc_index, D.query.text, query_index, limit=limit)
-        
-        for d in docs: d.load_docs(D)
-
-        docs_retrieved[bridge_name] = docs
+        try:
+            docs: List[ScoreNode]
+            if matchfn_key is not None:
+                rep1 = get_reps(repkey1, reps)
+                rep2 = get_reps(repkey2, reps)
+                matchfn = load_func(matchfn_key)
+                docs: List[ScoreNode] = matchfn(rep1, rep2)
+            else:
+                from .rag_components import retriever_router
+                #https://docs.llamaindex.ai/en/stable/examples/query_engine/CustomRetrievers.html
+                query_index = get_reps(repkey1, reps) 
+                doc_index = get_reps(repkey2, reps)
+                docs: List[ScoreNode] = retriever_router(doc_index, D.query.text, query_index, limit=limit)
+            
+            docs_retrieved[bridge_name] = docs
+        except Exception as e:
+            print(f'Unable to bridge: {e}')
 
         #show_docs(docs)
 
@@ -117,7 +120,7 @@ def compute_bridge_scores(reps, D, bridge_config):
 
 
 
-def rank_paths(scores, rank_config):
+def merge_results(bridge2docs, merge_config, selected_merges=[]):
     '''
     for each query rep_name: 
         - start from query, end at doc leaves? get score. rank docs by score
@@ -132,12 +135,39 @@ def rank_paths(scores, rank_config):
         limit: 10
 
     '''
-    def eval_score_expr(expr, scores):
+    from .fusion import reciprocal_rank_fusion
+
+    printd(1, f'\n=== Fusing Results, Ranking ... merges = {selected_merges}\n')
+
+    def eval_score_expr(expr, bridge2docs):
         #TODO: generalize! 
         #use expr to gen new scores for each doc common across all bridge_names. sort.
-        return scores[expr] 
-    rank_config = DotDict(rank_config)
-    doc_with_scores = eval_score_expr(rank_config.expr, scores)
+        return bridge2docs[expr]
+     
+    merge_config = DotDict(merge_config)
+    doc_with_scores = []
+
+    for merge_name, merge_props in merge_config.items():
+        if merge_name not in selected_merges: continue
+
+        merge_props = DotDict(merge_props)
+        if 'expr' in merge_props:
+            doc_with_scores = eval_score_expr(merge_props.expr, bridge2docs)[:merge_props.limit]
+        
+        elif 'method' in merge_props:
+            method, bridges, limit = [merge_props[x] for x in ['method', 'bridges', 'limit']]
+            bridge_list = [b.strip() for b in bridges.split(',')]
+            bridge2results = {b : bridge2docs[b] for b in bridge_list}
+
+            match method:
+                case 'reciprocal_rank':
+                    doc_with_scores = reciprocal_rank_fusion(bridge2results)[:limit]
+                case _:
+                    raise NotImplementedError(f'Unknown merge method : {method}')
+        else:
+            raise NotImplementedError(f'Unknown merge properties : {merge_props}')
+    
+                    
     return doc_with_scores
 
 
@@ -145,6 +175,11 @@ def bridge_query_doc(query_text, D, config):
     Q = DotDict(text=query_text)
     D.query = Q
     reps = compute_representations(D, config)
-    path_scores = compute_bridge_scores(reps, D, config.bridge) #repNode1, repNode2 -> score.
-    ranked_doc_with_scores = rank_paths(path_scores, config.rank) 
-    return ranked_doc_with_scores
+    bridge2docscores = compute_bridge_scores(reps, D, config.bridge) #repNode1, repNode2 -> score.
+    merge_config = config.get('merge', None) or config.get('combine')
+    selected_merges = config.get('selected_merges')
+    doc_with_scores = merge_results(bridge2docscores, merge_config, 
+                                           selected_merges=selected_merges.split(',')) 
+    for d in doc_with_scores: d.load_docs(D)
+    
+    return doc_with_scores

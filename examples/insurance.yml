@@ -39,6 +39,6 @@ bridge:
         limit: 3
 
 
-rank: 
+combine: 
     expr: b1
     limit: 10
