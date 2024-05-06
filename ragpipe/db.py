@@ -162,7 +162,7 @@ class Storage:
         metadatas = results['metadatas'][query_idx]
         distances = results['distances'][query_idx]
         for doc_idx in range(limit):
-            docnodes.append(ScoreNode(doc_path=metadatas[doc_idx]['path'], score = -distances[doc_idx]))
+            docnodes.append(ScoreNode(doc_path=metadatas[doc_idx]['path'], score = 2-distances[doc_idx]))
         return docnodes
     
     def retrieve_tensordb(self, rep_query, similarity_fn=None, limit=DEFAULT_LIMIT):

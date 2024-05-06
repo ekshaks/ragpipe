@@ -32,9 +32,13 @@ class DocNode(BaseModel):
         else:
             return self.content
     
+    def get_text(self):
+        assert self.li_node is not None
+        return self.li_node
+    
     def load_docs(self, D):
         if not self.is_ref: 
-            printd(2, 'DocNode:load_docs -- already loaded docs')
+            printd(3, 'DocNode:load_docs -- already loaded docs')
             return #already loaded
         else:
             printd(3, f'loading docs...{self.doc_path}')
