@@ -14,7 +14,7 @@ class DotDict(dict):
         except KeyError:
             raise AttributeError(key)
 
-DEFAULT_LIMIT=10 #max number of documents returned on match
+DEFAULT_LIMIT=200 #max number of documents returned on match
     
 def printd(N, text):
     if N >=3: return

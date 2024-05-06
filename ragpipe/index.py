@@ -10,8 +10,7 @@ from pydantic import BaseModel
 from typing import List, Optional
 
 from .docnode import ScoreNode
-from .encoders import get_encoder_index_reptype, get_similarity_fn, encode_fn
-
+from .encoders import get_encoder
 
 class IndexConfig(BaseModel):
     index_type: str
@@ -27,10 +26,11 @@ class IndexConfig(BaseModel):
 
 
 class RPIndex(): #rag pipe index
-    def __init__(self, encoder_name, encoder_model,
+    def __init__(self, encoder,
                  storage_config: StorageConfig =None):
-        self.encoder_name = encoder_name
-        self.encoder_model = encoder_model
+        #self.encoder_name = encoder_name
+        #self.encoder_model = encoder_model
+        self.encoder = encoder
         self.storage_config = storage_config
 
         #for in mem storage
@@ -41,7 +41,7 @@ class RPIndex(): #rag pipe index
 
     def get_index_config(self):
         return IndexConfig(index_type='rpindex', storage_config=self.storage_config,
-                           encoder_name=self.encoder_name, doc_paths=self.doc_paths)
+                           encoder_name=self.encoder.name, doc_paths=self.doc_paths)
 
     def get_storage(self):
         if self.storage is None:
@@ -51,15 +51,17 @@ class RPIndex(): #rag pipe index
 
     @classmethod
     def from_index_config(cls, ic: IndexConfig):
-        encoder_model = get_encoder_index_reptype(ic.encoder_name).encoder_model_loader()
-        return cls(ic.encoder_name, encoder_model, ic.storage_config)
+        encoder = get_encoder(ic.encoder_name)
+        #return cls(ic.encoder_name, encoder_model, ic.storage_config)
+        return cls(encoder, ic.storage_config)
 
     def add(self, docs, doc_paths, is_query=False, docs_already_encoded=False):
         self.doc_paths.extend(doc_paths)
 
         self.is_query = is_query
         if not docs_already_encoded:
-            doc_embeddings = encode_fn(self.encoder_model, docs)
+            #doc_embeddings = encode_fn(self.encoder_model, docs)
+            doc_embeddings = self.encoder.encode(docs)
 
         else:
             doc_embeddings = docs
@@ -81,10 +83,16 @@ class RPIndex(): #rag pipe index
                         limit=limit)
 
     def retrieve(self, rep_query, limit=DEFAULT_LIMIT):
-        similarity_fn = get_similarity_fn(self.encoder_name, self.encoder_model)
+        if self.encoder.name == 'bm25':
+            bm = self.doc_embeddings
+            doc_nodes = bm.retrieve(rep_query, limit=limit)
+            return doc_nodes
+        
+        similarity_fn = self.encoder.get_similarity_fn()
 
         doc_nodes: List[ScoreNode]
         if self.storage_config is None:
+            assert similarity_fn is not None
             doc_nodes = self.retrieve_in_mem(rep_query, similarity_fn=similarity_fn, limit=limit)
         else:
             storage = self.get_storage()
@@ -123,10 +131,10 @@ class VectorStoreIndexPath(VectorStoreIndex):
         return cls(vsi=vsi, index_config=ic)
 
     @classmethod
-    def from_storage(cls, ic: IndexConfig):
+    def from_index_config(cls, ic: IndexConfig):
         storage = Storage(ic.storage_config)
         ctx = storage.get_LI_context()
-        #encoder_model = get_encoder_index(ic.encoder_name).encoder_model
+        #encoder_model = get_encoder_index(ic.encoder.name).encoder_model
 
         vsi = VectorStoreIndex.from_vector_store(
                 ctx.vector_store, storage_context=ctx.storage_context
@@ -150,7 +158,7 @@ class ObjectIndex(): # list of objects
         return zip(self.reps, self.paths)
     def get_index_config(self):
         #return IndexConfig(index_type='objectindex', storage_config=self.storage_config, 
-        #                   encoder_name=self.encoder_name, doc_paths=self.doc_paths)
+        #                   encoder_name=self.encoder.name, doc_paths=self.doc_paths)
         raise NotImplementedError()
     @classmethod
     def from_index_config(cls, ic: IndexConfig):

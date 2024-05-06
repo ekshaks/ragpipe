@@ -31,9 +31,9 @@ def compute_representations(D, config):
         for repname, properties in C.items():
             #printd(3, f'rep for : {repname}')
             props = DotDict(properties)
-            build = props.get('build', True)
-            if not build: continue
-            rep_path_pairs = compute_rep(fpath, D, props=props, repname=repname, is_query=is_query)
+            enabled = props.get('enabled', True)
+            if not enabled: continue
+            rep_path_pairs = compute_rep(fpath, D, rep_props=props, repname=repname, is_query=is_query)
             rep_key = hash_field_repname(fpath, repname)
             _reps[rep_key] = rep_path_pairs
         return _reps
@@ -90,29 +90,36 @@ def compute_bridge_scores(reps, D, bridge_config):
 
     for bridge_name, properties in bridge_config.items():
         props = DotDict(properties)
+        enabled = props.get('enabled', True)
+        if not enabled: continue
+
         repkey1, repkey2 = map(lambda x: x.strip(), props.repnodes.split(','))
         printd(2, f'==== now bridging {repkey1}, {repkey2}')
         matchfn_key = props.get('matchfn')
         limit = props.get('limit') 
         limit = DEFAULT_LIMIT if limit is None else limit
 
-        try:
-            docs: List[ScoreNode]
-            if matchfn_key is not None:
-                rep1 = get_reps(repkey1, reps)
-                rep2 = get_reps(repkey2, reps)
-                matchfn = load_func(matchfn_key)
-                docs: List[ScoreNode] = matchfn(rep1, rep2)
-            else:
-                from .rag_components import retriever_router
-                #https://docs.llamaindex.ai/en/stable/examples/query_engine/CustomRetrievers.html
-                query_index = get_reps(repkey1, reps) 
-                doc_index = get_reps(repkey2, reps)
-                docs: List[ScoreNode] = retriever_router(doc_index, D.query.text, query_index, limit=limit)
-            
-            docs_retrieved[bridge_name] = docs
-        except Exception as e:
-            print(f'Unable to bridge: {e}')
+        #try:
+        docs: List[ScoreNode]
+        if matchfn_key is not None:
+            rep1 = get_reps(repkey1, reps)
+            rep2 = get_reps(repkey2, reps)
+            matchfn = load_func(matchfn_key)
+            docs: List[ScoreNode] = matchfn(rep1, rep2)
+        else:
+            from .rag_components import retriever_router
+            #https://docs.llamaindex.ai/en/stable/examples/query_engine/CustomRetrievers.html
+            query_index = get_reps(repkey1, reps) 
+            doc_index = get_reps(repkey2, reps)
+            docs: List[ScoreNode] = retriever_router(doc_index, D.query.text, query_index, limit=limit)
+        
+        evalfn_key = props.get('evalfn')
+        if evalfn_key is not None:
+            evalfn = load_func(evalfn_key)
+            evalfn(docs, D)
+
+        docs_retrieved[bridge_name] = docs
+
 
         #show_docs(docs)
 
@@ -177,7 +184,7 @@ def bridge_query_doc(query_text, D, config):
     reps = compute_representations(D, config)
     bridge2docscores = compute_bridge_scores(reps, D, config.bridge) #repNode1, repNode2 -> score.
     merge_config = config.get('merge', None) or config.get('combine')
-    selected_merges = config.get('selected_merges')
+    selected_merges = config.get('enabled_merges')
     doc_with_scores = merge_results(bridge2docscores, merge_config, 
                                            selected_merges=selected_merges.split(',')) 
     for d in doc_with_scores: d.load_docs(D)
