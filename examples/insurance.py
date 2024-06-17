@@ -25,6 +25,8 @@ The following is a snippet from a mmd document obtained by converting a PDF docu
 
 from pathlib import Path
 from ragpipe.common import DotDict, printd
+from ragpipe.config import load_config
+
 import yaml
 
 
@@ -54,25 +56,25 @@ def build_data_model(md_file):
     D = DotDict(sections=sections)
     return D
 
-def main():
-    with open('examples/insurance.yml', 'r') as file:
-        config = DotDict(yaml.load(file, Loader=yaml.FullLoader))
-    
+def main(respond_flag=False):
+    #with open('examples/insurance.yml', 'r') as file:
+    #    config = DotDict(yaml.load(file, Loader=yaml.FullLoader))
+    config = load_config('examples/insurance.yml', show=True)
     D = build_data_model('examples/data/insurance/niva-short.mmd')
     printd(3, 'over build data model')
 
-    queries = [
-        "I just had a baby, is baby food covered?",
-       "How is gauze used in my operation covered?"
-    ]
-    query_text = queries[1]
+    query_text = config.queries[1]
 
     from ragpipe.bridge import bridge_query_doc
 
     docs_retrieved = bridge_query_doc(query_text, D, config)
     #print(docs_retrieved) #response generator
     for doc in docs_retrieved: doc.show_li_node()
-    respond(query_text, docs_retrieved, config['prompts']['qa2']) 
+
+    if respond_flag:
+        return respond(query_text, docs_retrieved, config['prompts']['qa2']) 
+    else:
+        return docs_retrieved
 
 
 if __name__ == '__main__':

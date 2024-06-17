@@ -1,6 +1,5 @@
 from pathlib import Path
 from ragpipe.common import DotDict, printd
-import yaml
 
 
 def respond(query, docs_retrieved, prompt):
@@ -9,8 +8,9 @@ def respond(query, docs_retrieved, prompt):
     from ragpipe.llm_bridge import llm
     resp = llm.call_api(prompt, model='mistral')
     print(resp)
+    return resp
 
-{"name":"SaferCodes","images":"https:\/\/safer.codes\/img\/brand\/logo-icon.png","alt":"SaferCodes Logo QR codes generator system forms for COVID-19","description":"QR codes systems for COVID-19.\nSimple tools for bars, restaurants, offices, and other small proximity businesses.","link":"https:\/\/safer.codes","city":"Chicago"}
+#{"name":"SaferCodes","images":"https:\/\/safer.codes\/img\/brand\/logo-icon.png","alt":"SaferCodes Logo QR codes generator system forms for COVID-19","description":"QR codes systems for COVID-19.\nSimple tools for bars, restaurants, offices, and other small proximity businesses.","link":"https:\/\/safer.codes","city":"Chicago"}
 # 
 def build_data_model(jsonl_file):
 
@@ -25,11 +25,13 @@ def build_data_model(jsonl_file):
     D = DotDict(documents=documents, doc_leaf_type='raw')
     return D
 
-def main():
-    with open('examples/startups.yml', 'r') as file:
-        config = DotDict(yaml.load(file, Loader=yaml.FullLoader))
+def main(respond_flag=False):
+
+    from ragpipe.config import load_config
+    config = load_config('examples/startups.yml', show=True)
     
-    D = build_data_model('examples/data/startups/startups_demo-small.json')
+    #D = build_data_model('examples/data/startups/startups_demo-small.json')
+    D = build_data_model('examples/data/startups/startups_demo-vsmall.json')
     #D = build_data_model('examples/data/startups/startups_demo.json')
     printd(1, '-==== over build data model')
 
@@ -46,8 +48,11 @@ def main():
     #print(docs_retrieved) #response generator
     printd(1, f'query: {query_text}')
     for doc in docs_retrieved: doc.show()
-    #respond(query_text, docs_retrieved, config['prompts']['qa2']) 
 
+    if respond_flag:
+        return respond(query_text, docs_retrieved, config.prompts.qa2) 
+    else:
+        return docs_retrieved
 
 if __name__ == '__main__':
-    main()
+    main(respond_flag=False)

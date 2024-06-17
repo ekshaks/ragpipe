@@ -22,7 +22,7 @@ def encode_and_index(encoder, repname,
     encoder_name = encoder.name
     
     if encoder_name.startswith('llm'):
-        prompt = encoder.config.get('prompt', None)
+        prompt = encoder.config.prompt
         reps = llm_bridge.transform(items, encoder_name, prompt=prompt, is_query=is_query)
         index_type = 'objindex'
 
@@ -43,7 +43,7 @@ def encode_and_index(encoder, repname,
     match index_type:
         case 'llamaindex':
             assert isinstance(items, list) and len(items) > 0, f"items is {type(items)}"
-            ic = IndexConfig(index_type=index_type, encoder_name=encoder_name, 
+            ic = IndexConfig(index_type=index_type, encoder_config=encoder.config, 
                 doc_paths=item_paths, storage_config=storage_config)
             reps_index = VectorStoreIndexPath.from_docs(items, ic, encoder_model=encoder.get_model())
             
@@ -71,20 +71,20 @@ def encode_and_index(encoder, repname,
 def compute_rep(fpath, D, rep_props=None, repname=None, is_query=False) -> '*Index':
     #fpath = .sections[].text repname = dense
     assert rep_props is not None
-    encoder_name = rep_props.encoder
-    storage = rep_props.get('storage', False)
+    encoder_config = rep_props.encoder
+    storage = rep_props.store
     printd(2, f'props = {rep_props}, storage = {storage}')
   
     ##encoder model loader, index_type, rep_type
     doc_leaf_type = D.get('doc_leaf_type', 'raw')
-    encoder_config = dict(doc_leaf_type=doc_leaf_type) #TODO: from props?
-    encoder = get_encoder(encoder_name, encoder_config)
+    #encoder_config = dict(doc_leaf_type=doc_leaf_type) #TODO: from props?
+    encoder = get_encoder(encoder_config, doc_leaf_type=doc_leaf_type) #
 
     storage_config = None if not storage else StorageConfig(collection_name=fpath2collection(fpath,repname), 
                                                             rep_type=encoder.rep_type)
-    print(fpath, repname, f': storage={storage_config}, encoder={encoder_name}')
+    print(fpath, repname, f': storage={storage_config}, encoder={encoder_config}')
 
-    index_config = IM.get_config(fpath, repname, encoder_name) if storage_config else None
+    index_config = IM.get_config(fpath, repname, encoder_config) if storage_config else None
     
     if index_config is None:
         printd(2, f'Not found in IndexManager cache: creating reps.')
@@ -97,7 +97,7 @@ def compute_rep(fpath, D, rep_props=None, repname=None, is_query=False) -> '*Ind
                     items, item_paths,    
                     storage_config, is_query=is_query, index_type=index_type)
         if storage_config is not None: #does making a query rpindex make sense? change query?
-            IM.add(fpath, repname, encoder_name, reps_index)
+            IM.add(fpath, repname, encoder_config, reps_index)
         else:
             printd(2, f'storage_config None - not creating index.')
 

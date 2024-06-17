@@ -92,12 +92,13 @@ def np_to_torch(x):
 
 from pydantic import BaseModel
 from typing import Any
+from .config import EncoderConfig
 
 class Encoder(BaseModel):
     name: str
     mo_loader: Any
-    rep_type: str #= 'single_vector', 'multi_vector'
-    config: dict | None
+    rep_type: str #= 'single_vector', 'multi_vector', 'object'
+    config: EncoderConfig
     _model: Any | None = None
 
     def get_model(self):
@@ -108,15 +109,18 @@ class Encoder(BaseModel):
     def encode(self, docs, is_query=False) -> 'List[torch.Tensor]': #for RPIndex
         raise NotImplementedError('call the encode function for derived Encoder.')
     
-
-
+class LLMEncoder(Encoder):
+    @classmethod
+    def from_config(cls, config): 
+        return LLMEncoder(name=config.name, mo_loader='', rep_type='object', config=config)
+    
 class LlamaIndexEncoder(Encoder):
 
     @classmethod
-    def from_config(cls, name, config): 
+    def from_config(cls, config): 
         from llama_index.embeddings.fastembed import FastEmbedEmbedding
         from llama_index.embeddings.clip import ClipEmbedding
-
+        name = config.name
         if 'ViT' not in name:
             model_loader = lambda: FastEmbedEmbedding(model_name=name)
         else:
@@ -130,9 +134,10 @@ class LlamaIndexEncoder(Encoder):
 
 class FastEmbedEncoder(Encoder):
     @classmethod
-    def from_config(cls, name, config): 
+    def from_config(cls, config): 
         dense_models = ["BAAI/bge-small-en-v1.5"]
         sparse_models = ["prithivida/Splade_PP_en_v1"]
+        name = config.name
         match name:
             case dm if dm in dense_models:
                 model_loader = lambda: TextEmbedding(model_name=name)
@@ -163,7 +168,8 @@ class FastEmbedEncoder(Encoder):
 
 class ColbertEncoder(Encoder):
     @classmethod
-    def from_config(cls, name, config): 
+    def from_config(cls, config): 
+        name = config.name
         match name:
             case "colbert-ir/colbertv2.0":
                 model_loader = lambda: Colbert(model=name, tokenizer=name)
@@ -236,10 +242,10 @@ class MixbreadEncoder(Encoder):
 
 EncoderPool = {}
 
-def get_encoder(name, config={}):
-    doc_leaf_type = config.get('doc_leaf_type', 'raw')
+def get_encoder(econfig, **kwargs):
+    doc_leaf_type = kwargs.get('doc_leaf_type', 'raw')
     if doc_leaf_type == 'llamaindex':
-        return LlamaIndexEncoder.from_config(name, config)
+        return LlamaIndexEncoder.from_config(econfig)
 
     fastembed_models = ["BAAI/bge-small-en-v1.5",
                         "prithivida/Splade_PP_en_v1"] #read from file
@@ -249,20 +255,22 @@ def get_encoder(name, config={}):
     ]
 
     #TODO: add config hash + encoder name
-    encoder = EncoderPool.get(name, None) 
+    encoder = EncoderPool.get(econfig, None) 
     if encoder is not None:
         return encoder
     
-    match name:
+    match econfig.name:
         case fe if fe in fastembed_models:
-            encoder = FastEmbedEncoder.from_config(name, config)
+            encoder = FastEmbedEncoder.from_config(econfig)
         case ce if ce in colbert_models:
-            encoder = ColbertEncoder.from_config(name, config)
+            encoder = ColbertEncoder.from_config(econfig)
         case mxbai if 'mxbai' in mxbai:
-            assert False, f"not tested yet : {name}"
+            assert False, f"not tested yet : {econfig}"
             encoder = MixbreadEncoder.from_config(name, config)
+        case llme if 'llm' in llme:
+            encoder = LLMEncoder.from_config(econfig)
         case _:
-            raise (f'Not handled encoder : {name}')
+            raise (f'Not handled encoder : {econfig}')
     
-    EncoderPool[name] = encoder 
+    EncoderPool[econfig] = encoder 
     return encoder

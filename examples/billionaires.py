@@ -54,8 +54,8 @@ def respond(query, docs_retrieved, prompt):
 
 
 def main():
-    with open('examples/billionaires.yml', 'r') as file:
-        config = DotDict(yaml.load(file, Loader=yaml.FullLoader))
+    from ragpipe.config import load_config
+    config = load_config('examples/billionaires.yml', show=True)
     
     D = build_data_model('examples/data/billionaires.md')
     printd(3, 'over build data model')
