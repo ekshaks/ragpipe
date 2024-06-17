@@ -384,16 +384,25 @@
         return docs_retrieved
 
 </code></pre>
-<p>In <code>main</code>, we implement the following steps:
-- #L1 read the config file <code>insurance.yml</code> which specifies representations, bridges and merges. 
-    - Go through <code>insurance.yml</code> to understand the definitions.
-- #L2 read the data files (<code>niva-short.mmd</code>) to build a doc model <code>D</code> with following nested fields 
-    -  <code>query.text</code> which contains the query string 
-    - <code>.sections[].node</code> which contains the document snippets
-- #L4 does all the heavy lifting
-    - compute <code>#dense</code> representations for <code>query.text</code> and <code>.sections[].node</code> fields using <code>colbert-ir/colbertv2.0</code>
-    - rank documents according to the bridge <code>b1</code> across the two representations <code>query.text#dense</code>, <code>.sections[].node#dense</code>
-    - compute a merge <code>c1</code> to obtain the final ranked list. In this case, the merge is trivial since only a single bridge is defined. </p>
+<p>In <code>main</code>, we implement the following steps:</p>
+<ul>
+<li><code>#L1</code> read the config file <a href="ragpipe/examples/insurance/insurance.yml"><code>insurance.yml</code></a> which specifies representations, bridges and merges. <ul>
+<li>go through the <code>insurance.yml</code> file to understand the definitions.</li>
+</ul>
+</li>
+<li><code>#L2</code> read the data files (<code>niva-short.mmd</code>) to build a doc model <code>D</code> with following nested fields <ul>
+<li><code>query.text</code> which contains the query string </li>
+<li><code>.sections[].node</code> which contains the document snippets</li>
+</ul>
+</li>
+<li><code>#L4</code> all the heavy lifting happens in <code>ragpipe.bridge_query_doc</code> function based on definitions from <code>insurance.yml</code><ul>
+<li>compute <code>#dense</code> representations for <code>query.text</code> and <code>.sections[].node</code> fields using <code>colbert-ir/colbertv2.0</code></li>
+<li>rank documents according to the bridge <code>b1</code> across the two representations <code>query.text#dense</code>, <code>.sections[].node#dense</code></li>
+<li>compute a merge <code>c1</code> to obtain the final ranked list. In this case, the merge is trivial since only a single bridge is defined. </li>
+</ul>
+</li>
+<li><code>#L6</code> send the retrieved documents as context to the LLM, along with a QA prompt defined in <code>insurance.yml</code>; generate the final cohesive response.</li>
+</ul>
 <h2 id="faq">FAQ</h2>
 <p>How / where do you <em>chunk</em> the long documents?</p>
 <blockquote>
