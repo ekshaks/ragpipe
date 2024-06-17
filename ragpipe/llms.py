@@ -1,10 +1,14 @@
 from ollama import Client
+import os
+from dotenv import load_dotenv
 
-class LLM:
+load_dotenv()  # Load the .env file
+
+class LocalLLM:
   def __init__(self, host='http://192.168.0.171:11434') -> None:
     self.client = Client(host=host)
   
-  def call_api(self, prompt, model=None):
+  def __call__(self, prompt, model=None):
     model = 'mistral:instruct' if model is None else model
     response = self.client.chat(model=model, messages=[
     {
@@ -13,4 +17,24 @@ class LLM:
     }
     ])
     return response['message']['content']
-  
+
+local_llm = LocalLLM()
+
+
+def groq_llm(prompt, model="groq/llama3-8b-8192"):
+  from litellm import completion
+  import os
+
+  if 'GROQ_API_KEY' not in os.environ:
+      raise("GROQ_API_KEY is not set in os.environ")
+
+    
+  response = completion(
+        model=model, #"groq/llama3-70b-8192"
+        messages=[
+        {"role": "user", "content": prompt}
+    ],
+    #stream=True
+    )
+    #print(response)
+  return response['choices'][0]['message']['content']
