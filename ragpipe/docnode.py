@@ -21,7 +21,7 @@ class DocNode(BaseModel):
         if 'li_node' in data or 'file_name' in data:
             self.is_ref = False
 
-    def get_li_text_content(self):
+    def get_text_content(self):
         if self.li_node is not None:
             try:
                 text = self.li_node.node.text
@@ -30,11 +30,7 @@ class DocNode(BaseModel):
             #printd(2, f'get_text_content -- returning text: {text}')
             return text
         else:
-            return self.content
-    
-    def get_text(self):
-        assert self.li_node is not None
-        return self.li_node
+            return self.li_node
     
     def load_docs(self, D):
         if not self.is_ref: 
@@ -54,14 +50,11 @@ class ScoreNode(DocNode):
     score: float = None
     def show(self):
         assert not self.is_ref, 'Load doc before display'
-        assert isinstance(self.li_node, str), f'li_node has type {type(self.li_node)}'
-        values = ''
-        if self.bridge2rank is not None:
-            #values = '[' + ','.join(map(str,self.bridge2rank.values())) + ']'
-            values = '[' + ','.join([f'{b}:{rank}' for b, rank in self.bridge2rank.items()]) + ']'
-        print(f' 👉 {self.score:.3f} {values} ({self.doc_path}) 👉 ', self.li_node)
-
-    def show_li_node(self):
-        assert not self.is_ref, 'Load doc before display'
-        node_ = self.li_node
-        print(' 👉 ', self.score, node_.get_content()[:400], '\n\n')
+        if isinstance(self.li_node, str):  #, f'li_node has type {type(self.li_node)}'
+            values = ''
+            if self.bridge2rank is not None:
+                #values = '[' + ','.join(map(str,self.bridge2rank.values())) + ']'
+                values = '[' + ','.join([f'{b}:{rank}' for b, rank in self.bridge2rank.items()]) + ']'
+            print(f' 👉 {self.score:.3f} {values} ({self.doc_path}) 👉 ', self.li_node)
+        else:
+            print(' 👉 ', self.score, self.li_node.get_content()[:400], '\n\n')

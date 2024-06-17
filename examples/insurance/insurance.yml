@@ -17,6 +17,7 @@ prompts:
     Answer the following query based on the above document snippets.
 
     {query}
+    
     Answer:
 representations:
     query.text:

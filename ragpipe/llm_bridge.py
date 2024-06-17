@@ -4,10 +4,10 @@ import yaml
 from pathlib import Path
 
 from .common import DotDict, printd
-from .llms import LLM
+from .llms import local_llm
 
 # Globals
-llm = LLM()
+
 prompts_file_path = Path(__file__).resolve().parent / 'prompts.yaml' 
 with open(prompts_file_path, 'r') as file:
     PROMPTS = DotDict(yaml.safe_load(file))
@@ -15,7 +15,7 @@ with open(prompts_file_path, 'r') as file:
 def query_decomposer(query, prompt=None):
     if prompt is None:
         prompt = PROMPTS.query_decomposer.format(query=query)
-    resp = llm.call_api(prompt)
+    resp = local_llm.__call__(prompt)
     print(resp)
     resp = DotDict(json.loads(resp))
     return resp

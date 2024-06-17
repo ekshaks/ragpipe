@@ -47,8 +47,8 @@ def match_year(query_index: 'ObjectIndex', doc_index):
 def respond(query, docs_retrieved, prompt):
     docs_texts = '\n'.join([doc.get_text_content() for doc in docs_retrieved])
     prompt = prompt.format(documents=docs_texts, query=query)
-    from ragpipe.llm_bridge import llm
-    resp = llm.call_api(prompt, model='mistral')
+    from ragpipe.llm_bridge import local_llm
+    resp = local_llm.__call__(prompt, model='mistral')
     print(resp)
 
 
