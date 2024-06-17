@@ -11,10 +11,11 @@ from typing import List, Optional
 
 from .docnode import ScoreNode
 from .encoders import get_encoder
+from .config import EncoderConfig
 
 class IndexConfig(BaseModel):
     index_type: str
-    encoder_name: str
+    encoder_config: EncoderConfig
     doc_paths: List[str]
     storage_config: Optional[StorageConfig]
 
@@ -41,7 +42,7 @@ class RPIndex(): #rag pipe index
 
     def get_index_config(self):
         return IndexConfig(index_type='rpindex', storage_config=self.storage_config,
-                           encoder_name=self.encoder.name, doc_paths=self.doc_paths)
+                           encoder_config=self.encoder.config, doc_paths=self.doc_paths)
 
     def get_storage(self):
         if self.storage is None:
@@ -51,7 +52,7 @@ class RPIndex(): #rag pipe index
 
     @classmethod
     def from_index_config(cls, ic: IndexConfig):
-        encoder = get_encoder(ic.encoder_name)
+        encoder = get_encoder(ic.encoder_config)
         #return cls(ic.encoder_name, encoder_model, ic.storage_config)
         return cls(encoder, ic.storage_config)
 

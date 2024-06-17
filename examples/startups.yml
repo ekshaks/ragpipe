@@ -1,4 +1,5 @@
-qa2: |
+prompts:
+  qa2: |
     The following are snippets from an insurance policy document in markdown format.
     # documents
 
@@ -8,28 +9,30 @@ qa2: |
 
     {query}
     Answer:
+encoders:
+  bge_small:
+    name: BAAI/bge-small-en-v1.5
+    dtype: tensor<float>[384]
+  splade:
+    dtype: sparsetensor<float>
+    name: prithivida/Splade_PP_en_v1
+  stf:
+    name: sentence-transformers/all-MiniLM-L6-v2
+    dtype: tensor<float>[384]
+  colbert:
+    name: colbert-ir/colbertv2.0 
+    dtype: tensor<float>[?,384]
 
 representations:
     query.text:
-        dense:
-          type: tensor<float>[384]
-          encoder: BAAI/bge-small-en-v1.5
-          #encoder: colbert-ir/colbertv2.0 #sentence-transformers/all-MiniLM-L6-v2
-        sparse:
-         type: sparsetensor<float>
-         encoder: prithivida/Splade_PP_en_v1
+        dense: {encoder: bge_small} 
+        sparse: {encoder: splade}
 
     .documents[].description:
-        dense:
-            type: tensor<float>[384]
-            encoder: BAAI/bge-small-en-v1.5
-            #encoder: colbert-ir/colbertv2.0
-            storage: true 
-        sparse:
-         type: sparsetensor<float>
-         encoder: prithivida/Splade_PP_en_v1
+        dense: {encoder: bge_small, store: true}
+        sparse: {encoder: splade}
 
-bridge:
+bridges:
   b_dense:
       repnodes: query.text#dense, .documents[].description#dense
       limit: 10
@@ -38,7 +41,7 @@ bridge:
      limit: 10
 
 
-merge:
+merges:
   c1:
     expr: b_dense
     limit: 10
@@ -47,5 +50,5 @@ merge:
     bridges: b_dense, b_sparse
     limit: 10
 
-enabled_merges: c2
+enabled_merges: c1
 

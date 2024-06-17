@@ -10,12 +10,17 @@ packages = [{include = "ragpipe"}]
 [tool.poetry.dependencies]
 python = ">=3.8.1,<4.0"
 llama-index = ">=0.10.7"
-rank_bm25
+rank_bm25 = "*"
+typer = "*"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.0.0"
 ipykernel = "^6.29.0"
+mkdocs-material = "*"
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[pytest]
+filterwarnings = "ignore::DeprecationWarning"

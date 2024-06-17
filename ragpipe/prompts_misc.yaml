@@ -15,3 +15,6 @@ topic-split: |
   ```
   Please directly output the processed result, without any additional analysis:
 
+identify-paras: | #todo: structure the output
+  The following is an article in markdown format where paragraphs are split down to individual sentences. Identify the paragraph boundaries so that each paragraph contains related content.
+
