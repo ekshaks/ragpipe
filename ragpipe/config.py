@@ -69,6 +69,7 @@ class MergeConfig(BaseModel):
 class RPConfig(BaseModel):
     prompts: Optional[Dict[str, str]] = {} #name to prompt
     encoders: Optional[Dict[str, EncoderConfig]] = {}
+    llm_models: Optional[Dict[str, str]] = {}
     representations: Dict[str,  Dict[str, RepConfig] ] #doc field -> repname -> repconfig 
     bridges: Dict[str, BridgeConfig]
     merges: Dict[str, MergeConfig]

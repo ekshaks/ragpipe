@@ -31,14 +31,15 @@ def encode_and_index(encoder, repname,
         _repname = repname[1:] # _header -> header
         reps = [item[_repname] for item in items]
         index_type = 'objindex'
+    else: pass
 
+    '''
     elif encoder_name == 'bm25':
         reps = items if is_query else BM25(items) 
         reps_index = RPIndex(encoder=encoder, storage_config=storage_config)
         reps_index.add(docs=reps, doc_paths=item_paths, is_query=is_query, docs_already_encoded=True)
         index_type = 'noindex'
-    else:
-        pass
+    '''
  
     match index_type:
         case 'llamaindex':
@@ -50,7 +51,7 @@ def encode_and_index(encoder, repname,
         case 'rpindex':
             item_type = type(items[0]).__name__
             if item_type != 'str': #handle LI text nodes. TODO: what if LI documents?
-                assert 'TextNode' in item_type, f'Cannot handle item type {item_type}'
+                assert 'TextNode' in item_type, f'Expected item {repname} of type str, but found {item_type}'
                 items = [item.text for item in items]
 
             reps_index = RPIndex(encoder=encoder, storage_config=storage_config)

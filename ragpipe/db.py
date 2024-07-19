@@ -161,7 +161,8 @@ class Storage:
         docnodes = []
         metadatas = results['metadatas'][query_idx]
         distances = results['distances'][query_idx]
-        for doc_idx in range(limit):
+        idx_len = min(limit, len(metadatas))
+        for doc_idx in range(idx_len):
             docnodes.append(ScoreNode(doc_path=metadatas[doc_idx]['path'], score = 2-distances[doc_idx]))
         return docnodes
     

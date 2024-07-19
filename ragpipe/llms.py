@@ -38,3 +38,11 @@ def groq_llm(prompt, model="groq/llama3-8b-8192"):
     )
     #print(response)
   return response['choices'][0]['message']['content']
+
+
+def respond_to_contextual_query(query, docs_retrieved, prompt, model='groq/mixtral-8x7b-32768'):
+    docs_texts = '\n'.join([doc.get_text_content() for doc in docs_retrieved])
+    prompt = prompt.format(documents=docs_texts, query=query)
+    #resp = groq_llm(prompt, model='groq/llama3-70b-8192')
+    resp = groq_llm(prompt, model=model)
+    return resp

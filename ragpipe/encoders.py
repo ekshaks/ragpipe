@@ -106,9 +106,23 @@ class Encoder(BaseModel):
             self._model = self.mo_loader()
         return self._model
     
-    def encode(self, docs, is_query=False) -> 'List[torch.Tensor]': #for RPIndex
+    def encode(self, docs, is_query=False) : #for RPIndex
         raise NotImplementedError('call the encode function for derived Encoder.')
-    
+
+
+class BM25Encoder(Encoder):
+    def encode(self, docs, is_query=False):
+        #print(f'BM25Enc.encode: is_query= {is_query} ')
+        reps = docs if is_query else BM25(docs)
+        return reps
+
+    @classmethod
+    def from_config(cls, config):
+        name = config.name
+        return BM25Encoder(name=name, mo_loader=None, config=config,
+                                rep_type='single_vector') 
+
+
 class LLMEncoder(Encoder):
     @classmethod
     def from_config(cls, config): 
@@ -259,7 +273,11 @@ def get_encoder(econfig, **kwargs):
     if encoder is not None:
         return encoder
     
+    print('get_encoder: ', econfig)
+    
     match econfig.name:
+        case 'bm25':
+            encoder = BM25Encoder.from_config(econfig)
         case fe if fe in fastembed_models:
             encoder = FastEmbedEncoder.from_config(econfig)
         case ce if ce in colbert_models:
@@ -270,7 +288,7 @@ def get_encoder(econfig, **kwargs):
         case llme if 'llm' in llme:
             encoder = LLMEncoder.from_config(econfig)
         case _:
-            raise (f'Not handled encoder : {econfig}')
+            raise ValueError(f'Not handled encoder : {econfig}')
     
     EncoderPool[econfig] = encoder 
     return encoder

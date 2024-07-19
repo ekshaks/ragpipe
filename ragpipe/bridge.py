@@ -43,7 +43,7 @@ def compute_representations(D, config):
     printd(1, '=== Computing Representations...')
     for field, repC in config.representations.items(): 
         printd(3, f'compute_index: field={field}, config={repC}')
-        is_query = 'query' in field
+        is_query = 'qu' in field #hack! need a flag
         #fpath = field.split('.')[-1] if is_query else field
         fpath = field
         _reps = _compute_index_reps(fpath, D, repC, is_query=is_query)

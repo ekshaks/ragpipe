@@ -23,6 +23,9 @@ class DocNode(BaseModel):
 
     def get_text_content(self):
         if self.li_node is not None:
+            if isinstance(self.li_node, str):
+                return self.li_node
+            
             try:
                 text = self.li_node.node.text
             except Exception:

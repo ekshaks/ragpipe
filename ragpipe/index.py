@@ -62,7 +62,7 @@ class RPIndex(): #rag pipe index
         self.is_query = is_query
         if not docs_already_encoded:
             #doc_embeddings = encode_fn(self.encoder_model, docs)
-            doc_embeddings = self.encoder.encode(docs)
+            doc_embeddings = self.encoder.encode(docs, is_query=is_query)
 
         else:
             doc_embeddings = docs
@@ -75,7 +75,7 @@ class RPIndex(): #rag pipe index
 
 
     def get_query_rep(self):
-        assert self.is_query, 'cant get rep from non-query index'
+        assert self.is_query, f'cant get rep from non-query index: {self.doc_paths}'
         return self.doc_embeddings[0]
 
     def retrieve_in_mem(self, rep_query, similarity_fn=None, limit=None):

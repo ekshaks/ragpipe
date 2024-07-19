@@ -14,6 +14,13 @@ Instead of the usual `chunk-embed-match-rank` flow, Ragpipe adopts a holistic, e
 
 The `represent-bridge-merge` pattern is very powerful and allows us to build all kinds of complex retrieval engines with `retrieve-rank-rerank` patterns.
 
+
+## Installation
+
+```
+pip install ragpipe
+```
+
 ## Key Ideas
 
 **Representations**. Choose the query/document fields as well as how to represent each chosen query / document field to aid similarity/relevance computation (*bridges*) over the entire document repository. Representations can be text strings, dense/sparse vector embeddings or arbitrary data objects, and help *bridge* the gap between the query and the documents.
@@ -36,8 +43,7 @@ To query over a data repository,
 
 ## Quick Start
 
-See the example in the `ragpipe/examples/insurance` directory.
-
+See the example in the `examples/insurance` directory.
 
 
 # Dependencies
