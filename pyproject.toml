@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "ragpipe"
-version = "0.0.1"
-description = "RAG++: bridge query and doc with guidance"
+version = "0.0.2"
+description = "ragpipe: iterate quickly on your RAG pipelines."
 authors = ["Nishant Sinha <nishant@offnote.co>"]
 license = "Apache 2.0"
 readme = "README.md"
@@ -10,7 +10,10 @@ packages = [{include = "ragpipe"}]
 [tool.poetry.dependencies]
 python = ">=3.8.1,<4.0"
 llama-index = ">=0.10.7"
+fastembed = "*"
 rank_bm25 = "*"
+litellm = "*"
+
 typer = "*"
 
 [tool.poetry.group.dev.dependencies]
