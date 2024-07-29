@@ -9,6 +9,7 @@
     Ragpipe: Iterate fast on your RAG pipelines.
     <br><br>
   <a href="https://ragpipe.github.io/">Docs</a> •
+  <a href="examples/">Examples</a> •
  <a href="https://discord.com/invite/ATWd8A5cEh">Discord</a> 
 </h3>
 
