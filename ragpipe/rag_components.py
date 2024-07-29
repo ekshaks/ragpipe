@@ -33,14 +33,6 @@ def encode_and_index(encoder, repname,
         index_type = 'objindex'
     else: pass
 
-    '''
-    elif encoder_name == 'bm25':
-        reps = items if is_query else BM25(items) 
-        reps_index = RPIndex(encoder=encoder, storage_config=storage_config)
-        reps_index.add(docs=reps, doc_paths=item_paths, is_query=is_query, docs_already_encoded=True)
-        index_type = 'noindex'
-    '''
- 
     match index_type:
         case 'llamaindex':
             assert isinstance(items, list) and len(items) > 0, f"items is {type(items)}"
@@ -74,7 +66,7 @@ def compute_rep(fpath, D, rep_props=None, repname=None, is_query=False) -> '*Ind
     assert rep_props is not None
     encoder_config = rep_props.encoder
     storage = rep_props.store
-    printd(2, f'props = {rep_props}, storage = {storage}')
+    printd(3, f'compute_rep: props = {rep_props}, storage = {storage}')
   
     ##encoder model loader, index_type, rep_type
     doc_leaf_type = D.get('doc_leaf_type', 'raw')
@@ -88,7 +80,7 @@ def compute_rep(fpath, D, rep_props=None, repname=None, is_query=False) -> '*Ind
     index_config = IM.get_config(fpath, repname, encoder_config) if storage_config else None
     
     if index_config is None:
-        printd(2, f'Not found in IndexManager cache: creating reps.')
+        printd(2, f'Not found in IndexManager cache: {repname}, {encoder_config.name}. Creating reps.')
 
         items_path_pairs = get_fpath_items(fpath, D)
         items, item_paths = items_path_pairs.els, items_path_pairs.paths
@@ -100,11 +92,12 @@ def compute_rep(fpath, D, rep_props=None, repname=None, is_query=False) -> '*Ind
         if storage_config is not None: #does making a query rpindex make sense? change query?
             IM.add(fpath, repname, encoder_config, reps_index)
         else:
-            printd(2, f'storage_config None - not creating index.')
+            printd(2, f'storage_config is None - not creating index.')
 
     else:
 
-        printd(2, f'Found in IndexManager cache: {index_config}')
+        printd(2, f'Found in IndexManager cache: {repname}, {encoder_config.name}.')
+        printd(3, f'{index_config}')
         match index_config.index_type:
             case 'llamaindex':
                 reps_index = VectorStoreIndexPath.from_index_config(index_config)
@@ -121,7 +114,7 @@ def retriever_router(doc_index, query_text, query_index, limit=10): #TODO: rep_q
     '''
     from llama_index.core import QueryBundle
     from llama_index.core.retrievers import BaseRetriever, VectorIndexRetriever
-    print('doc_index type', type(doc_index), type(query_index))
+    printd(3, f'retriever_router: doc_index type {type(doc_index)}, {type(query_index)}')
     #print(doc_index)
     #print(query_index)
     assert(isinstance(query_index, RPIndex)), f'query_index type= {type(query_index)} '

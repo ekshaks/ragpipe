@@ -171,7 +171,6 @@ def merge_results(bridge2docs, merge_config, selected_merges=[]):
             case _:
                 raise NotImplementedError(f'Unknown merge method : {method}\nmerge_props: {merge_props}')
     
-                    
     return doc_with_scores
 
 

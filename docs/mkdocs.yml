@@ -1,0 +1,5 @@
+site_name: "Ragpipe Documentation"
+site_url: "https://ragpipe.github.io"
+theme: "material"
+site_dir: "_site"
+docs_dir: "src"

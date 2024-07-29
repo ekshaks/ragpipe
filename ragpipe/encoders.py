@@ -34,7 +34,7 @@ def tokenize_remove_stopwords(text: str) -> List[str]:
 
 #https://github.com/dorianbrown/rank_bm25
 from rank_bm25 import BM25Okapi
-
+import numpy as np
 
 class BM25:
     def __init__(self, doc_list) -> None: #expect: doc.get_content() defined
@@ -53,7 +53,12 @@ class BM25:
             assert isinstance(query, list)
             tokenized_query = query
         scores = self.bm25.get_scores(tokenized_query)
-        node_scores = [ScoreNode(li_node=x[0], score=x[1]) for x in zip(self.doc_list, scores)]
+        top_n = np.argsort(scores)[::-1][:limit]
+        node_scores = [ScoreNode(li_node=self.doc_list[i], score=scores[i], doc_path_index=i) 
+                       for i in top_n]
+        #doc_scores = zip(self.doc_list, scores)
+        #node_scores = [ScoreNode(li_node=x[0], score=x[1], doc_path_index=j) for j, x in 
+        #               enumerate(doc_scores)]
         nodes_scores_sorted = sorted(node_scores, key=lambda x: x.score or 0.0, reverse=True)
         return nodes_scores_sorted[: limit]
     
@@ -273,7 +278,7 @@ def get_encoder(econfig, **kwargs):
     if encoder is not None:
         return encoder
     
-    print('get_encoder: ', econfig)
+    printd(3, f'get_encoder: {econfig}')
     
     match econfig.name:
         case 'bm25':

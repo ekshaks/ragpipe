@@ -23,7 +23,7 @@ Decompose the following complex query into "atomic queries":
 def parse_decomposed_result(result):
     queries = []
     lines = [l.strip() for l in result.split('\n')]
-    print(lines)
+    printd(3, lines)
     for line in lines :
         if line.startswith("<query>") and line.endswith("</query>"):
             queries.append(line[7:-8].strip())  # Remove "<query>" and "</query>" tags
@@ -66,9 +66,9 @@ def link_result_query(old_results, query):
         query = query.replace(numtext, str(text))
     return query
 
-def resolve_query(query, D, config):
+def resolve_query(query, D, config, human_input=False):
 
-
+    printd(2, 'decomposing query...')
     queries = decompose_query(query, config)
     print('decomposed query:\n', queries)
     index = 0
@@ -78,21 +78,28 @@ def resolve_query(query, D, config):
     while True:
         if index >= len(queries): break
         query_text = link_result_query(results[:index], queries[index])
-        print('next query: ', query_text)
-        input('next query:')
+        printd(2, f'resolve_query - next query:  {query_text}')
+        if human_input: 
+            query_text_h = input('update next query?:')
+            if query_text_h: query_text = query_text_h.strip()
     
         docs_retrieved = bridge_query_doc(query_text, D, config)
-        print([d.show() for d in docs_retrieved])
+        printd(2, 'resolve_query - docs retrieved:')
+        doc_paths = []
+        for d in docs_retrieved: 
+            doc_paths.append(d.doc_path)
+            d.show()
 
         result = respond_to_contextual_query(query_text, docs_retrieved, config.prompts['qa'],
                                             model = config.llm_models['answer_gen']) 
         answer = extract_answer(result, query_text, config)
         print(result, '\n', f'Answer: {answer}')
 
-        answerh = input('answer:').strip()
-        if answerh: answer = answerh
+        if human_input:
+            answer_h = input('update answer?:')
+            if answer_h: answer = answer_h.strip()
 
-        results.append(dict(result=result, answer=answer))
+        results.append(dict(result=result, answer=answer, query=queries[index], doc_paths=doc_paths))
         index += 1
 
     return results

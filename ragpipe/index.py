@@ -87,6 +87,8 @@ class RPIndex(): #rag pipe index
         if self.encoder.name == 'bm25':
             bm = self.doc_embeddings
             doc_nodes = bm.retrieve(rep_query, limit=limit)
+            for d in doc_nodes:
+                d.doc_path = self.doc_paths[d.doc_path_index]
             return doc_nodes
         
         similarity_fn = self.encoder.get_similarity_fn()

@@ -11,6 +11,7 @@ class DocNode(BaseModel):
     #ref to content
     file_name: str = None #stored in file, not loaded yet
     doc_path: str = None #full path in doc hierarchy (single or multi-)
+    doc_path_index: int = None #temporary index into doc_paths list
 
     is_ref: bool = True #by default - doc is a ref (not loaded)
     bridge2rank: dict = None #individual bridge ranks before fusion
