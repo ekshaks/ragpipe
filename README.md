@@ -20,6 +20,8 @@ Ragpipe helps you extract insights from large document repositories *quickly*.
 
 Ragpipe is lean and nimble. Makes it easy to iterate fast, tweak components of your RAG pipeline until you get desired responses.
 
+Yet another RAG framework? Although popular RAG frameworks make it easy to setup RAG pipelines, they lack primitives that enable you to iterate and get to desired responses quickly. 
+
 Watch a quick [video intro](https://www.youtube.com/playlist?list=PLLPfjV1xMkS1k9J7q2v3eQ2U-At6p3evM).
 
 *Note: Under active development. Expect breaking changes.*
@@ -62,9 +64,9 @@ poetry install
 
 **Representations**. Choose the query/document fields as well as how to represent each chosen query / document field to aid similarity/relevance computation (*bridges*) over the entire document repository. Representations can be text strings, dense/sparse vector embeddings or arbitrary data objects, and help *bridge* the gap between the query and the documents.
 
-**Bridges**. Choose a *pair* of query and document representation to *bridge*. A bridge serves as a relevance indicator: one of the several criteria for identifying the relevant documents for a query. In practice, several bridges together determine the degree to which a document is relevant to a query. Computing each bridge creates a unique ranked list of documents.
+**Bridges**. Choose a *pair* of query and document representation to *bridge*. A bridge serves as a relevance indicator: one of the several criteria for identifying the relevant documents for a query. In practice, several bridges together determine the degree to which a document is relevant to a query. A bridge is a ranker and top-k selector, rolled into one. Computing each bridge creates a unique ranked list of documents with respect to the relevance criteria.
 
-**Merges**. Specify how to combine the bridges, e.g., combine multiple ranked list of documents into a single ranked list.
+**Merges**. Specify how to combine the bridges, e.g., combine multiple ranked list of documents into a single ranked list using rank fusion.
 
 **Data Model**. A hierarchical data structure that consists of all the (nested) documents. The data model is created from the original document files and is retained over the entire pipeline. We compute representations for arbitrary nested fields of the data, without flattening the data tree.
 
