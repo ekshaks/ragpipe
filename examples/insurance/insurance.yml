@@ -39,6 +39,8 @@ merges:
     c1:
         expr: b1
         limit: 10
+etc:
+  data_folder: ./data
 
 queries:
     - I just had a baby, is baby food covered?

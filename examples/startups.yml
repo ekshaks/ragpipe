@@ -9,19 +9,21 @@ prompts:
 
     {query}
     Answer:
+
+dbs:
+  chroma:
+    path: /tmp/ragpipe
+    name: chromadb
+
 encoders:
   bge_small:
     name: BAAI/bge-small-en-v1.5
-    dtype: tensor<float>[384]
   splade:
-    dtype: sparsetensor<float>
     name: prithivida/Splade_PP_en_v1
   stf:
     name: sentence-transformers/all-MiniLM-L6-v2
-    dtype: tensor<float>[384]
   colbert:
     name: colbert-ir/colbertv2.0 
-    dtype: tensor<float>[?,384]
 
 representations:
     query.text:
@@ -29,7 +31,7 @@ representations:
         sparse: {encoder: splade}
 
     .documents[].description:
-        dense: {encoder: bge_small, store: true}
+        dense: {encoder: bge_small, store: chroma}
         sparse: {encoder: splade}
 
 bridges:
@@ -50,5 +52,15 @@ merges:
     bridges: b_dense, b_sparse
     limit: 10
 
-enabled_merges: c1
+enabled_merges: c2
+
+llm_models:
+  __default__: groq/llama3-70b-8192
+
+etc:
+  data_folder: ./data
+queries:
+  - healthcare
+  - fashion
+  - financial
 

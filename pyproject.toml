@@ -13,6 +13,7 @@ llama-index = ">=0.10.7"
 fastembed = "*"
 rank_bm25 = "*"
 litellm = "*"
+chromadb = "*"
 
 typer = "*"
 

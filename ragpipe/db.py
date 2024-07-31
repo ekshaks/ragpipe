@@ -89,36 +89,53 @@ class TensorCollection:
         return docnodes
 
         
+from .config import DBConfig
 
 class StorageConfig(BaseModel):
+    db_props: DBConfig
     collection_name: str
-    path: str = '/tmp/ragpipe'
     rep_type: str = 'single_vector'
-    dbname: str = 'chromadb'
 
+    @classmethod
+    def from_kwargs(cls, **kwargs):
+        collection_name = kwargs.pop('collection_name')
+        rep_type = kwargs.pop('rep_type')
+        db_props = kwargs.pop('db_props')
+
+        if isinstance(db_props, bool): #resolve store=True
+            dbs = kwargs.pop('dbs')
+            if rep_type == 'single_vector':
+                db_props = dbs['__default_single_vector__']
+            elif rep_type == 'multi_vector':
+                db_props = dbs['__default_multi_vector__']
+            else:
+                raise ValueError(f'Invalid rep_type {rep_type}')
+        else:
+            assert isinstance(db_props, DBConfig), f'unknown db_props type {db_props}'
+        
+        sc = cls(collection_name=collection_name, rep_type=rep_type, db_props=db_props)
+        return sc
+    
     def __init__(self, **kwargs):
-    #def __post_model_init__(self):
-        if kwargs['rep_type'] == 'multi_vector':
-            kwargs['dbname'] = 'tensordb'
+        #if kwargs['rep_type'] == 'multi_vector':
+        #    kwargs['dbname'] = 'tensordb'
         super().__init__(**kwargs)
-        Path(self.path).mkdir(parents=True, exist_ok=True)
-
-        #assert False, f'{self.dbname}, {self.rep_type}'
-
+        Path(self.db_props.path).mkdir(parents=True, exist_ok=True)
 
 
 
 class Storage:
     def __init__(self, config: StorageConfig) -> None:
         self.C = config
-        print(f'init storage: {config}')
+        print(f'init storage: {config}, {type(config)}')
+        dbp = config.db_props
 
-        match config.dbname:
+        match dbp.name:
             case 'chromadb':
-                self.client = chromadb.PersistentClient(path=self.C.path)
+                self.client = chromadb.PersistentClient(path=dbp.path)
                 self.collection = self.client.get_or_create_collection(self.C.collection_name)
             case 'tensordb':
-                self.collection = TensorCollection(dbpath=self.C.path, collection=self.C.collection_name)
+                self.collection = TensorCollection(dbpath=dbp.path, collection=self.C.collection_name)
             case _:
                 raise NotImplementedError()
         # get items from a collection
@@ -135,8 +152,9 @@ class Storage:
     
 
     def add(self, reps, paths):
-        printd(2, f'adding to storage {self.C.dbname} - paths: {paths}')
-        match self.C.dbname:
+        dbname = self.C.db_props.name
+        printd(2, f'adding to storage {dbname} - paths: {paths}')
+        match dbname:
             case 'chromadb':
                 self.collection.add(
                     embeddings=[rep.tolist() for rep in reps], #expects a list of list
@@ -170,13 +188,14 @@ class Storage:
         return self.collection.retrieve(rep_query, similarity_fn=similarity_fn, limit=limit)
     
     def retrieve(self, rep_query, similarity_fn=None, limit=DEFAULT_LIMIT):
-        printd(2, f'retrieving from storage {self.C.dbname}')
-        match self.C.dbname:
+        dbname = self.C.db_props.name
+        printd(2, f'retrieving from storage {dbname}')
+        match dbname:
             case 'chromadb':
                 docnodes = self.retrieve_chromadb(rep_query.tolist(), limit=limit)
             case 'tensordb':
                 docnodes = self.retrieve_tensordb(rep_query, similarity_fn=similarity_fn, limit=limit)
             case _:
-                raise NotImplementedError(f'retrieve: {self.C.dbname}')
+                raise NotImplementedError(f'retrieve: {dbname}')
         return docnodes
 

@@ -8,45 +8,28 @@ from .common import printd, load_func
 from .common import DotDict, DEFAULT_LIMIT
 
 def compute_representations(D, config):
-    '''
-    compute:
-    recursively Q, transcript
-    index:
-    each field, rep name -> 
-        - index yes? index_reps -> create indexed collection, store in vecdb
-            - collection: list(vec), list(metadata) or df[vec, field*]
-            - options: which field to include?
-            - rep [fpath, rep_name] -> (fpath, collection)
-        - index no? mem_reps[field, rep_name] -> (path, rep)
-
-    '''
     from .rag_components import compute_rep
 
     def hash_field_repname(fpath, repname):
         return f'{fpath}#{repname}'
     
-    def _compute_index_reps(fpath, D, C, is_query=False):
-        #fpath: path to to-be-rep node in O, O: parent object, C: config
-        _reps = {}
-        for repname, rep_props in C.items():
-            #printd(3, f'rep for : {repname}')
-            #props = DotDict(properties)
-            enabled = rep_props.enabled
-            if not enabled: continue
-            rep_path_pairs = compute_rep(fpath, D, rep_props=rep_props, repname=repname, is_query=is_query)
-            rep_key = hash_field_repname(fpath, repname)
-            _reps[rep_key] = rep_path_pairs
-        return _reps
-        
     reps = {} #'Chunk.content' -> dense -> rep=(doc, <vec>)
     #field, rep_name -> (collection_path | rep)
     printd(1, '=== Computing Representations...')
-    for field, repC in config.representations.items(): 
+    for field, repC in config.representations.items():  #for each field.
         printd(3, f'compute_index: field={field}, config={repC}')
         is_query = 'qu' in field #hack! need a flag
-        #fpath = field.split('.')[-1] if is_query else field
         fpath = field
-        _reps = _compute_index_reps(fpath, D, repC, is_query=is_query)
+
+        _reps = {}
+        for repname, rep_props in repC.items(): #for each repname for field
+            #printd(3, f'rep for : {repname}')
+            if not rep_props.enabled: continue
+            rep_path_pairs = compute_rep(fpath, D, config.dbs, 
+                                         rep_props=rep_props, repname=repname, is_query=is_query)
+            rep_key = hash_field_repname(fpath, repname)
+            _reps[rep_key] = rep_path_pairs
+        #_reps = _compute_index_reps(fpath, D, repC, is_query=is_query)
         reps.update(_reps)
 
 
@@ -177,6 +160,7 @@ def merge_results(bridge2docs, merge_config, selected_merges=[]):
 def bridge_query_doc(query_text, D, config):
     Q = DotDict(text=query_text)
     D.query = Q
+    printd(1, 'computing reps..')
     reps = compute_representations(D, config)
     bridge2docscores = compute_bridge_scores(reps, D, config.bridges) #repNode1, repNode2 -> score.
     merge_config = config.merges

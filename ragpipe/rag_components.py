@@ -61,20 +61,24 @@ def encode_and_index(encoder, repname,
     return reps_index
 
 
-def compute_rep(fpath, D, rep_props=None, repname=None, is_query=False) -> '*Index':
+def compute_rep(fpath, D, dbs, rep_props=None, repname=None, is_query=False) -> '*Index':
     #fpath = .sections[].text repname = dense
     assert rep_props is not None
     encoder_config = rep_props.encoder
-    storage = rep_props.store
-    printd(3, f'compute_rep: props = {rep_props}, storage = {storage}')
+    printd(3, f'compute_rep: props = {rep_props}, storage = {rep_props.store}')
   
     ##encoder model loader, index_type, rep_type
     doc_leaf_type = D.get('doc_leaf_type', 'raw')
     #encoder_config = dict(doc_leaf_type=doc_leaf_type) #TODO: from props?
     encoder = get_encoder(encoder_config, doc_leaf_type=doc_leaf_type) #
 
-    storage_config = None if not storage else StorageConfig(collection_name=fpath2collection(fpath,repname), 
-                                                            rep_type=encoder.rep_type)
+    storage_config = None if not rep_props.store else\
+          StorageConfig.from_kwargs(
+            collection_name=fpath2collection(fpath,repname), 
+            rep_type = encoder.rep_type,
+            dbs=dbs,
+            db_props=rep_props.store
+         )
     print(fpath, repname, f': storage={storage_config}, encoder={encoder_config}')
 
     index_config = IM.get_config(fpath, repname, encoder_config) if storage_config else None

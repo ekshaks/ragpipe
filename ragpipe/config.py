@@ -26,14 +26,18 @@ class EncoderConfig(BaseModel, frozen=True):
     dtype: Optional[str] = ''
     size: Optional[int] = None
     prompt: Optional[str] = None
-        
+
+class DBConfig(BaseModel, frozen=True):
+    model_config = ConfigDict(extra='forbid')
+    name: str = 'chromadb'
+    path: str = '/tmp/ragpipe/'
 
 class RepConfig(BaseModel):
     model_config = ConfigDict(extra='forbid')
 
     encoder: Union[str, EncoderConfig]
     enabled: Optional[bool] = True
-    store: Optional[bool] = False
+    store: Optional[Union[bool,str,DBConfig]] = False
 
     def update_encoder(self, encoders):
         if isinstance(self.encoder, str):
@@ -42,6 +46,16 @@ class RepConfig(BaseModel):
                 econfig = EncoderConfig(name=self.encoder)
             #raise ValueError(f'Unable to find encoder : {self.encoder}')
             self.encoder = econfig
+
+    def update_store(self, store_map: Dict[str,DBConfig]):
+        #if isinstance(self.store, bool): #handle after rep_type known
+        if isinstance(self.store, str):
+            try:
+                self.store = store_map[self.store]
+            except KeyError as e:
+                print(f'No DB store defined: {self.store}')
+                raise e
+
 
 class BridgeConfig(BaseModel):
     repnodes: List[str] #sparse2, .paras[].text#sparse2
@@ -69,12 +83,14 @@ class MergeConfig(BaseModel):
 class RPConfig(BaseModel):
     prompts: Optional[Dict[str, str]] = {} #name to prompt
     encoders: Optional[Dict[str, EncoderConfig]] = {}
+    dbs: Optional[Dict[str, DBConfig]] = {}
     llm_models: Optional[Dict[str, str]] = {}
     representations: Dict[str,  Dict[str, RepConfig] ] #doc field -> repname -> repconfig 
     bridges: Dict[str, BridgeConfig]
     merges: Dict[str, MergeConfig]
     enabled_merges: Optional[List] = Field(default_factory=list)
     queries: Optional[List[str]] = []
+    etc: Optional[Dict[str,str]] = {}
 
     @field_validator('enabled_merges', mode='before')
     @classmethod
@@ -84,6 +100,13 @@ class RPConfig(BaseModel):
 
     @model_validator(mode='after')
     def model_normalize(self) -> Self:
+        dbs = self.dbs
+        dbs['__default_single_vector__'] = DBConfig()
+        dbs['__default_multi_vector__'] = DBConfig(name='tensordb')
+
+        llm_models = self.llm_models
+        if len(llm_models) == 0:
+            llm_models['__default__'] = 'groq/llama3-70b-8192'
 
         em = self.enabled_merges
         #print('at least one merge: ', len(em))
@@ -101,6 +124,7 @@ class RPConfig(BaseModel):
         for field_rep in self.representations.values():
             for repname, repconfig in field_rep.items():
                 repconfig.update_encoder(self.encoders)
+                repconfig.update_store(dbs)
         
         return self
 

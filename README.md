@@ -44,8 +44,18 @@ The `represent-bridge-merge` pattern is very powerful and allows us to build and
 
 ## Installation
 
-```
+Using `pip`.
+```bash
 pip install ragpipe
+```
+
+Clone and install dependencies (recommended).
+```bash
+git clone https://github.com/ekshaks/ragpipe; cd ragpipe
+#install poetry
+curl -sSL https://install.python-poetry.org | python3 - 
+#install ragpipe dependencies
+poetry install 
 ```
 
 ## Key Ideas
@@ -58,25 +68,80 @@ pip install ragpipe
 
 **Data Model**. A hierarchical data structure that consists of all the (nested) documents. The data model is created from the original document files and is retained over the entire pipeline. We compute representations for arbitrary nested fields of the data, without flattening the data tree.
 
+## Querying with Ragpipe
+
 To query over a data repository, 
 
-- we compute the data model over the original data repository 
-- specify the document fields and the (multiple) representations to be computed for each field
-- specify which representations to compute for query
-- specify bridges: which pair of query and doc field representation should be matched
-- merges: how to combine multiple bridges, sequentially or in parallel, to yield a curated ranked list of relevant documents.
-- gen-response: how to generate response to the query using the relevant document list and a large language model.
+1. Build a hierachical data model over your data repositories, e.g., `{"documents" : [{"text": ...}, ...]}`. 
 
+2. In `config.yml`:
+
+- Specify which document fields will be represented and how.
+- Specify which representations to compute for the query.
+- Specify `bridges`: which pair of query and doc field representation should be matched to find relevant documents.
+- Specify `merges`: how to combine multiple bridges, sequentially or in parallel, to yield the final ranked list of relevant documents.
+
+
+3. Specify how to generate response to the query using the above ranked document list and a large language model.
+4. Iterate by making quick changes to (1), (2) or (3).
 
 ## Quick Start
 
-See the example in the `examples/insurance` directory.
+See the example in the [`examples/insurance`](examples/insurance) directory.
+```
+examples/insurance/
+|
+|-- insurance.py
+|-- insurance.yml
+```
+
+```bash 
+pythom -m examples.insurance.insurance
+```
+
+## API Usage
+
+Embed ragpipe into your Agentic query resolvers by delegating fine-grained retrieval to ragpipe.
+
+```python
+
+def rag():
+    from ragpipe.config import load_config
+    config = load_config('examples/<project>/config.yml', show=True) #see examples/*/*.yml
+
+    D = build_data_model(config) #D.query_text is the query, D.docs.<> contain documents
+
+    from ragpipe.bridge import bridge_query_doc
+    docs_retrieved = bridge_query_doc(D.query_text, D, config)
+    for doc in docs_retrieved: doc.show()
+
+    result = respond(query_text, docs_retrieved, config.prompts['qa'], config.llm_models['default']) 
+    
+    print(f'\nQuery: {query_text}')
+    print('\nGenerated answer: ', result)
+```
 
 
-# Key Dependencies
+
+## Key Dependencies
 
 Ragpipe relies on 
-- `LlamaIndex`: for parsing markdown documents
 - `rank_bm25`: for BM25 based retrieval
 - `fastembed`: dense and sparse embeddings
+- `chromadb`: default vector database (more coming..)
 - `litellm`: interact with LLM APIs
+- `LlamaIndex`: for parsing markdown documents
+
+
+## Contribution
+
+Ragpipe is open-source and under active development. We welcome contributions:
+- Try out ragpipe on queries over your data. Open an issue or send a pull request.
+- Share with us a tricky RAG problem that you are stalled with and your attempt solving it with ragpipe.
+
+
+## References
+
+- [Why your GPT + Vector Search RAG demo won't make it to production?](https://offnote.substack.com/p/llm-ir-1-why-your-gpt-vector-search)
+- [RAG++: Bridging the Query - Doc Gap](https://offnote.substack.com/p/llm-ir-2-rag-from-scratch-bridging)
+- [Lessons Building an Enterprise RAG Product](https://offnote.substack.com/p/lessons-building-an-enterprise-genai)

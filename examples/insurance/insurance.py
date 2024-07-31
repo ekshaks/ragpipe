@@ -37,8 +37,13 @@ def build_data_model(md_file):
 def main(respond_flag=False):
     #with open('examples/insurance.yml', 'r') as file:
     #    config = DotDict(yaml.load(file, Loader=yaml.FullLoader))
-    config = load_config('examples/insurance/insurance.yml', show=True)
-    D = build_data_model('examples/data/insurance/niva-short.mmd')
+    parent = Path(__file__).parent
+    config = load_config(f'{parent}/insurance.yml', show=True)
+    data_folder = config.etc['data_folder']
+    md_path = Path(f'{data_folder}/insurance/niva-short.mmd')
+    assert Path(md_path).exists(), f'Data folder not found. Please clone github.com/ragpipe/data and point config variable etc/data_folder to the data folder.'
+
+    D = build_data_model(md_path)
     printd(3, 'over build data model')
 
     query_text = config.queries[1]

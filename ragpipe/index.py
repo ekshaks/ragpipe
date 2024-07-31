@@ -1,5 +1,4 @@
 
-from llama_index.core import VectorStoreIndex
 from .common import DEFAULT_LIMIT, printd
 from .db import Storage, StorageConfig, exact_nn
 
@@ -105,8 +104,8 @@ class RPIndex(): #rag pipe index
         return doc_nodes
 
 
-class VectorStoreIndexPath(VectorStoreIndex):
-    def __init__(self, index_config:IndexConfig, vsi: VectorStoreIndex = None):
+class VectorStoreIndexPath():
+    def __init__(self, index_config:IndexConfig, vsi: 'VectorStoreIndex' = None):
         self.index_config = index_config
         self.vsi = vsi
 
@@ -121,6 +120,8 @@ class VectorStoreIndexPath(VectorStoreIndex):
             storage_context = ctx.storage_context
         else:
             storage_context = None
+    
+        from llama_index.core import VectorStoreIndex
 
 
         if 'TextNode' in item_type:
@@ -138,6 +139,7 @@ class VectorStoreIndexPath(VectorStoreIndex):
         storage = Storage(ic.storage_config)
         ctx = storage.get_LI_context()
         #encoder_model = get_encoder_index(ic.encoder.name).encoder_model
+        from llama_index.core import VectorStoreIndex
 
         vsi = VectorStoreIndex.from_vector_store(
                 ctx.vector_store, storage_context=ctx.storage_context
