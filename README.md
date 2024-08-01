@@ -41,7 +41,7 @@ How do we resolve each sub-query?
 - **merge** the retrieved docs across bridges to setup a context,
 - present the query and context to a language model to compute the final response
 
-The `represent-bridge-merge` pattern is very powerful and allows us to build and iterate over all kinds of complex retrieval pipelines, including those based on the traditional `retrieve-rank-rerank` pattern and more recent advanced RAG patterns.
+The `represent-bridge-merge` pattern is very powerful and allows us to build and iterate over all kinds of complex retrieval pipelines, including those based on the traditional `retrieve-rank-rerank` pattern and more recent advanced RAG patterns. Evals can be attached to `bridge` or `merge` nodes to verify intermediate results.
 
 
 ## Installation
@@ -139,10 +139,14 @@ Ragpipe relies on
 
 Ragpipe is open-source and under active development. We welcome contributions:
 - Try out ragpipe on queries over your data. Open an issue or send a pull request.
-- Share with us a tricky RAG problem that you are stalled with and your attempt solving it with ragpipe.
+- Join us as an early contributor to build a new, powerful RAG framework.
+- Stuck on a RAG problem without progress? Share with us, iterate and overcome blockers.
 
 
-## References
+Join discussion on our [Discord](https://discord.com/invite/ATWd8A5cEh) channel.
+
+
+## Read More
 
 - [Why your GPT + Vector Search RAG demo won't make it to production?](https://offnote.substack.com/p/llm-ir-1-why-your-gpt-vector-search)
 - [RAG++: Bridging the Query - Doc Gap](https://offnote.substack.com/p/llm-ir-2-rag-from-scratch-bridging)
