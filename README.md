@@ -91,7 +91,7 @@ To query over a data repository,
 
 Examples are in the [examples](examples) directory.
 
-For instances, run [`examples/insurance`](examples/insurance).
+For instance, run [`examples/insurance`](examples/insurance).
 ```
 examples/insurance/
 |
@@ -120,6 +120,8 @@ def rag():
     docs_retrieved = bridge_query_doc(D.query_text, D, config)
     for doc in docs_retrieved: doc.show()
 
+
+    from ragpipe.llms import respond_to_contextual_query as respond
     result = respond(query_text, docs_retrieved, config.prompts['qa'], config.llm_models['default']) 
     
     print(f'\nQuery: {query_text}')
@@ -136,7 +138,7 @@ Ragpipe relies on
 - `chromadb`: default vector database (more coming..)
 - `litellm`: interact with LLM APIs
 - `jinja2`: prompt formatting
-- `LlamaIndex`: for parsing markdown documents
+- `LlamaIndex`: for parsing documents
 
 
 ## Contribution
