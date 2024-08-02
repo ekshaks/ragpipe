@@ -89,7 +89,9 @@ To query over a data repository,
 
 ## Quick Start
 
-See the example in the [`examples/insurance`](examples/insurance) directory.
+Examples are in the [examples](examples) directory.
+
+For instances, run [`examples/insurance`](examples/insurance).
 ```
 examples/insurance/
 |
@@ -98,8 +100,9 @@ examples/insurance/
 ```
 
 ```bash 
-pythom -m examples.insurance.insurance
+python -m examples.insurance.insurance
 ```
+
 
 ## API Usage
 
@@ -132,6 +135,7 @@ Ragpipe relies on
 - `fastembed`: dense and sparse embeddings
 - `chromadb`: default vector database (more coming..)
 - `litellm`: interact with LLM APIs
+- `jinja2`: prompt formatting
 - `LlamaIndex`: for parsing markdown documents
 
 

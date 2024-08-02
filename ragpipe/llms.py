@@ -1,4 +1,3 @@
-from ollama import Client
 import os
 from dotenv import load_dotenv
 
@@ -6,6 +5,7 @@ load_dotenv()  # Load the .env file
 
 class LocalLLM:
   def __init__(self, host='http://192.168.0.171:11434') -> None:
+    from ollama import Client
     self.client = Client(host=host)
   
   def __call__(self, prompt, model=None):
@@ -21,12 +21,18 @@ class LocalLLM:
 local_llm = LocalLLM()
 
 
-def groq_llm(prompt, model="groq/llama3-8b-8192"):
+def cloud_llm(prompt, model="groq/llama3-8b-8192"):
   from litellm import completion
   import os
 
-  if 'GROQ_API_KEY' not in os.environ:
-      raise("GROQ_API_KEY is not set in os.environ")
+  prefix_key_pairs = [
+     ('groq/', 'GROQ_API_KEY'),
+     ('openai/', 'OPENAI_API_KEY')
+  ]
+
+  for prefix, api_key in prefix_key_pairs:
+    if model.startswith(prefix) and api_key not in os.environ:
+        raise ValueError(f"{api_key} is not set in os.environ")
 
     
   response = completion(
@@ -39,10 +45,16 @@ def groq_llm(prompt, model="groq/llama3-8b-8192"):
     #print(response)
   return response['choices'][0]['message']['content']
 
-
-def respond_to_contextual_query(query, docs_retrieved, prompt, model='groq/mixtral-8x7b-32768'):
+def llm_router(prompt, model):
+   if model.startswith('local/') or model.startswith('ollama/'):
+      return local_llm(prompt, model=model)
+   else:
+      return cloud_llm(prompt, model=model)
+      
+      
+def respond_to_contextual_query(query, docs_retrieved, prompt_templ, model='groq/mixtral-8x7b-32768'):
+    from .prompts import eval_template
     docs_texts = '\n'.join([doc.get_text_content() for doc in docs_retrieved])
-    prompt = prompt.format(documents=docs_texts, query=query)
-    #resp = groq_llm(prompt, model='groq/llama3-70b-8192')
-    resp = groq_llm(prompt, model=model)
+    prompt = eval_template(prompt_templ, documents=docs_texts, query=query)
+    resp = llm_router(prompt, model=model)
     return resp

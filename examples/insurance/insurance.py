@@ -3,15 +3,16 @@
 from pathlib import Path
 from ragpipe.common import DotDict, printd
 from ragpipe.config import load_config
+from ragpipe.prompts import eval_template
 
-
-def respond(query, docs_retrieved, prompt):
+def respond(query, docs_retrieved, prompt_templ):
     docs_texts = '\n'.join([doc.get_text_content() for doc in docs_retrieved])
-    prompt = prompt.format(documents=docs_texts, query=query)
+    prompt = eval_template(prompt_templ, documents=docs_texts, query=query)
+
     #from ragpipe.llm_bridge import local_llm
     #resp = local_llm.call_api(prompt, model='mistral')
-    from ragpipe.llms import groq_llm
-    resp = groq_llm(prompt)
+    from ragpipe.llms import cloud_llm
+    resp = cloud_llm(prompt)
     print(resp)
 
 def build_data_model(md_file):

@@ -1,13 +1,13 @@
 from pathlib import Path
 from ragpipe.common import DotDict, printd
+from ragpipe.prompts import eval_template
 
 
-
-def respond(query, docs_retrieved, prompt, llm_model):
+def respond(query, docs_retrieved, prompt_templ, llm_model):
     docs_texts = '\n'.join([doc.get_text_content() for doc in docs_retrieved])
-    prompt = prompt.format(documents=docs_texts, query=query)
-    from ragpipe.llms import groq_llm
-    resp = groq_llm(prompt, model=llm_model)
+    prompt = eval_template(prompt_templ, documents=docs_texts, query=query)
+    from ragpipe.llms import cloud_llm
+    resp = cloud_llm(prompt, model=llm_model)
     return resp
 
 #{"name":"SaferCodes","images":"https:\/\/safer.codes\/img\/brand\/logo-icon.png","alt":"SaferCodes Logo QR codes generator system forms for COVID-19","description":"QR codes systems for COVID-19.\nSimple tools for bars, restaurants, offices, and other small proximity businesses.","link":"https:\/\/safer.codes","city":"Chicago"}
@@ -31,7 +31,12 @@ def main(respond_flag=False):
     parent = Path(__file__).parent
     config = load_config(f'{parent}/startups.yml', show=True)
     data_folder = config.etc['data_folder']
-    D = build_data_model(f'{data_folder}/startups/startups_demo-vsmall.json')
+    
+    assert Path(data_folder).exists(), f'Data folder not found. Please clone github.com/ragpipe/data and point config variable etc/data_folder in startups.yml to the data folder.'
+    json_path = f'{data_folder}/startups/startups_demo-vsmall.json'
+    assert Path(json_path).exists(), f'Data JSON file not found: {json_path}!'
+
+    D = build_data_model(json_path)
     printd(1, '-==== over build data model')
 
     queries = config.queries

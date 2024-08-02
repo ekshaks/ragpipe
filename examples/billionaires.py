@@ -44,34 +44,30 @@ def match_year(query_index: 'ObjectIndex', doc_index):
         if year in doc_rep]
     return docpath_scores
 
-def respond(query, docs_retrieved, prompt):
-    docs_texts = '\n'.join([doc.get_text_content() for doc in docs_retrieved])
-    prompt = prompt.format(documents=docs_texts, query=query)
-    from ragpipe.llm_bridge import local_llm
-    resp = local_llm.__call__(prompt, model='mistral')
-    print(resp)
-
-
-
 def main():
     from ragpipe.config import load_config
     config = load_config('examples/billionaires.yml', show=True)
     
-    D = build_data_model('examples/data/billionaires.md')
+    data_folder = config.etc['data_folder']
+    assert Path(data_folder).exists(), f'Data folder not found. Please clone github.com/ragpipe/data and point config variable etc/data_folder in startups.yml to the data folder.'
+    
+    md_path = f'{data_folder}/billionaires.md'
+    assert Path(md_path).exists(), f'Markdownfile not found: {md_path}!'
+
+    D = build_data_model(md_path)
     printd(3, 'over build data model')
 
-    queries = [
-        "What's the net worth of the second richest billionaire in 2023?",
-        "How many billionaires were there in 2021?"
-    ]
-    query_text = queries[0]
-
+    query_text = config.queries[0]
+    printd(1, f'Query: {query_text}')
     from ragpipe.bridge import bridge_query_doc
 
     docs_retrieved = bridge_query_doc(query_text, D, config)
-    #print(docs_retrieved) #response generator
-    respond(query_text, docs_retrieved, config['prompts']['qa']) 
+    print('Documents: ', docs_retrieved) #response generator
 
+    from ragpipe.llms import respond_to_contextual_query
+
+    resp = respond_to_contextual_query(query_text, docs_retrieved, config.prompts['qa']) 
+    print('Answer:\n', resp)
 
 
 

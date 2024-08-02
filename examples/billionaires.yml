@@ -29,3 +29,9 @@ merges:
     c1:
         expr: b1
         limit: 10
+
+queries:
+    - "What's the net worth of the second richest billionaire in 2023?"
+    - "How many billionaires were there in 2021?"
+etc:
+    data_folder: './data'

@@ -114,6 +114,12 @@ class Encoder(BaseModel):
     def encode(self, docs, is_query=False) : #for RPIndex
         raise NotImplementedError('call the encode function for derived Encoder.')
 
+class PassThroughEncoder(Encoder):
+    def encode(self, docs, is_query=False):
+        return docs
+    @classmethod
+    def from_config(cls, config):
+        return PassThroughEncoder(name=config.name, mo_loader=None, config=config, rep_type='object')
 
 class BM25Encoder(Encoder):
     def encode(self, docs, is_query=False):
@@ -292,6 +298,8 @@ def get_encoder(econfig, **kwargs):
             encoder = MixbreadEncoder.from_config(name, config)
         case llme if 'llm' in llme:
             encoder = LLMEncoder.from_config(econfig)
+        case pth if 'passthrough' in pth:
+            encoder = PassThroughEncoder.from_config(econfig)
         case _:
             raise ValueError(f'Not handled encoder : {econfig}')
     

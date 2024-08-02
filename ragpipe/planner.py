@@ -1,5 +1,5 @@
 from .common import printd
-from ragpipe.llms import groq_llm
+from ragpipe.llms import cloud_llm
 
 
 decompose_prompt = '''
@@ -31,7 +31,7 @@ def parse_decomposed_result(result):
 
 def decompose_query(query, config):
     prompt = decompose_prompt.format(query=query)
-    resp = groq_llm(prompt, model=config.llm_models['decomposer'])
+    resp = cloud_llm(prompt, model=config.llm_models['decomposer'])
     queries = parse_decomposed_result(resp)
     return queries
 
@@ -49,7 +49,7 @@ def extract_answer(result, query_text, config):
             res = None
             printd(2, f'Rewriting trial {i}')
             prompt = config.prompts['rewrite_in_format'].format(answer=result, query=query_text)
-            res = groq_llm(prompt, model=config.llm_models['formatter'])
+            res = cloud_llm(prompt, model=config.llm_models['formatter'])
             #result = respond_to_contextual_query(query_text, [result],  )
     return res
 

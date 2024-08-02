@@ -3,20 +3,20 @@ prompts:
     Answer the query based on the markdown document snippets.
     # query
 
-    {query}
+    {{query}}
 
     # documents
 
-    {documents}
+    {{documents}}
   qa2: |
     The following are snippets from an insurance policy document in markdown format.
     # documents
 
-    {documents}
+    {{documents}}
 
     Answer the following query based on the above document snippets.
 
-    {query}
+    {{query}}
     
     Answer:
 representations:

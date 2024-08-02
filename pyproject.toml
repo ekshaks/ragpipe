@@ -14,6 +14,8 @@ fastembed = "*"
 rank_bm25 = "*"
 litellm = "*"
 chromadb = "*"
+jinja2 = "*"
+
 
 typer = "*"
 
