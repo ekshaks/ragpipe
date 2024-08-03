@@ -60,6 +60,20 @@ curl -sSL https://install.python-poetry.org | python3 -
 poetry install 
 ```
 
+Alternatively you could use conda to install all necessary dependencies.
+```bash
+git clone https://github.com/ekshaks/ragpipe; cd ragpipe
+#creating a new environment with python 3.10
+conda create -n ragpipe python=3.10
+#activating the environment
+conda activate ragpipe
+#install ragpipe dependencies
+pip install -r requirements.txt
+```
+
+Note: For CUDA support on Windows/Linux you might need to install PyTorch with CUDA compiled.
+For instructions follow https://pytorch.org/get-started/locally/
+
 ## Key Ideas
 
 **Representations**. Choose the query/document fields as well as how to represent each chosen query / document field to aid similarity/relevance computation (*bridges*) over the entire document repository. Representations can be text strings, dense/sparse vector embeddings or arbitrary data objects, and help *bridge* the gap between the query and the documents.
@@ -103,7 +117,6 @@ examples/insurance/
 python -m examples.insurance.insurance
 ```
 
-The default LLM is [Groq](https://groq.com/). Please set GROQ_API_KEY in `.env`. Alternatively, openai LLMs (set `OPENAI_API_KEY`) and ollama based local LLMs (`ollama/..` or `local/..`) are also supported.
 
 ## API Usage
 
