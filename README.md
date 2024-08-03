@@ -103,6 +103,7 @@ examples/insurance/
 python -m examples.insurance.insurance
 ```
 
+The default LLM is [Groq](https://groq.com/). Please set GROQ_API_KEY in `.env`. Alternatively, openai LLMs (set `OPENAI_API_KEY`) and ollama based local LLMs (`ollama/..` or `local/..`) are also supported.
 
 ## API Usage
 
