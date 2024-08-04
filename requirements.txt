@@ -1,0 +1,14 @@
+llama-index>=0.10.7
+fastembed
+rank_bm25
+litellm
+chromadb
+jinja2
+typer
+pytest==8.0.0
+ipykernel==6.29.0
+mkdocs-material
+jsonlines
+transformers
+torch
+diskcache
