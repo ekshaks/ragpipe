@@ -15,9 +15,11 @@ rank_bm25 = "*"
 litellm = "*"
 chromadb = "*"
 jinja2 = "*"
-
-
+safetensors = "*"
 typer = "*"
+
+[tool.poetry.extras]
+db = ["qdrant_client"]
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.0.0"

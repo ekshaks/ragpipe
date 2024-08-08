@@ -4,7 +4,7 @@ from .db import Storage, StorageConfig, exact_nn
 
 
 from pydantic import BaseModel
-
+import uuid
 
 from typing import List, Optional
 
@@ -13,10 +13,12 @@ from .encoders import get_encoder
 from .config import EncoderConfig
 
 class IndexConfig(BaseModel):
-    index_type: str
     encoder_config: EncoderConfig
-    doc_paths: List[str]
-    storage_config: Optional[StorageConfig]
+    storage_config: Optional[StorageConfig] = None
+    fpath: str
+    repname: str 
+    doc_paths: List[str] 
+    index_type: str = 'rpindex'
 
     '''StorageConfig
     collection: str
@@ -24,24 +26,57 @@ class IndexConfig(BaseModel):
     dbname: str = 'chromadb'
     '''
 
+    @classmethod
+    def from_kwargs(cls, 
+                    encoder_config: EncoderConfig, 
+                    storage_config: StorageConfig,
+                    fpath, repname, doc_paths=[]
+                    ) -> 'IndexConfig':
+        return cls(
+                   encoder_config=encoder_config, storage_config=storage_config,
+                    fpath=fpath, repname=repname, doc_paths=doc_paths
+                   )
+ 
+    
+    def get_uid(self):
+        '''Return unique identifier for the index'''
+        dpaths = uuid.uuid5(uuid.NAMESPACE_OID, ','.join(self.doc_paths))
+        return f'{self.fpath}%%{self.repname}%%{dpaths}%%{self.encoder_config}%%{self.storage_config}'
+    
+    def add_doc_paths(self, doc_paths):
+        self.doc_paths.extend(doc_paths)
+
+
 
 class RPIndex(): #rag pipe index
-    def __init__(self, encoder,
-                 storage_config: StorageConfig =None):
-        #self.encoder_name = encoder_name
-        #self.encoder_model = encoder_model
-        self.encoder = encoder
-        self.storage_config = storage_config
+
+    # def __init__(self, encoder,
+    #              storage_config: StorageConfig =None):
+    #     self.encoder = encoder
+    #     self.storage_config = storage_config
+
+    #     #for in mem storage
+    #     self.doc_paths = [] #update when add
+    #     self.doc_embeddings = [] #
+
+    #     self.is_query = False #update when 'add'
+    #     self.storage = None
+    
+    def __init__(self, ic: IndexConfig):
+        self.index_config = ic
+        self.encoder = get_encoder(ic.encoder_config)
+        self.storage_config = ic.storage_config
 
         #for in mem storage
         self.doc_paths = [] #update when add
         self.doc_embeddings = [] #
+
         self.is_query = False #update when 'add'
         self.storage = None
 
-    def get_index_config(self):
-        return IndexConfig(index_type='rpindex', storage_config=self.storage_config,
-                           encoder_config=self.encoder.config, doc_paths=self.doc_paths)
+    def get_index_config(self): return self.index_config
+        #return IndexConfig(index_type='rpindex', storage_config=self.storage_config,
+        #                   encoder_config=self.encoder.config, doc_paths=self.doc_paths)
 
     def get_storage(self):
         if self.storage is None:
@@ -51,9 +86,8 @@ class RPIndex(): #rag pipe index
 
     @classmethod
     def from_index_config(cls, ic: IndexConfig):
-        encoder = get_encoder(ic.encoder_config)
-        #return cls(ic.encoder_name, encoder_model, ic.storage_config)
-        return cls(encoder, ic.storage_config)
+        return cls(ic)
+
 
     def add(self, docs, doc_paths, is_query=False, docs_already_encoded=False):
         self.doc_paths.extend(doc_paths)
@@ -104,50 +138,7 @@ class RPIndex(): #rag pipe index
         return doc_nodes
 
 
-class VectorStoreIndexPath():
-    def __init__(self, index_config:IndexConfig, vsi: 'VectorStoreIndex' = None):
-        self.index_config = index_config
-        self.vsi = vsi
 
-    def get_vector_store_index(self): return self.vsi
-
-    @classmethod
-    def from_docs(cls, docs, ic: IndexConfig, encoder_model):
-        item_type = type(docs[0]).__name__
-        if ic.storage_config is not None:
-            storage = Storage(ic.storage_config)
-            ctx = storage.get_LI_context()
-            storage_context = ctx.storage_context
-        else:
-            storage_context = None
-    
-        from llama_index.core import VectorStoreIndex
-
-
-        if 'TextNode' in item_type:
-            vsi = VectorStoreIndex(docs, embed_model=encoder_model,
-                                   storage_context=storage_context, show_progress=True)
-        else:
-            vsi = VectorStoreIndex.from_documents(docs, embed_model=encoder_model,
-                        storage_context=storage_context, show_progress=True)
-
-
-        return cls(vsi=vsi, index_config=ic)
-
-    @classmethod
-    def from_index_config(cls, ic: IndexConfig):
-        storage = Storage(ic.storage_config)
-        ctx = storage.get_LI_context()
-        #encoder_model = get_encoder_index(ic.encoder.name).encoder_model
-        from llama_index.core import VectorStoreIndex
-
-        vsi = VectorStoreIndex.from_vector_store(
-                ctx.vector_store, storage_context=ctx.storage_context
-            )
-        return cls(vsi=vsi, index_config=ic)
-
-    def get_index_config(self):
-        return self.index_config
 
 
 class ObjectIndex(): # list of objects
@@ -178,28 +169,37 @@ class IndexManager:
         self.path = path
         self.cache = dc.Cache(path)
 
-    def get_key(self, fpath, repname, encoder_name):
-        return f'{fpath}#{repname}#{encoder_name}'
-
-    def add(self, fpath, repname, encoder_name, index):
+    def add(self, index_config):
         #try:
-        index_config: IndexConfig = index.get_index_config()
-        key = self.get_key(fpath, repname, encoder_name)
+        #index_config: IndexConfig = index.get_index_config()
+        #print('\n\niconfig', type(index_config), index_config)
+        key = index_config.get_uid()
+        printd(2, f' key {key}')
         self.cache[key.encode('utf-8')] = index_config
-        printd(1, f'adding {key} for index {type(index)}')
+        printd(1, f'IM::add - adding index_config {key}') #{index_config}')
         '''
         except Exception as e:
             import traceback
             printd(1, f'not adding {fpath} for index {type(index)}.\n Exception: {e}')
             traceback.print_exc()
         '''
-
-
-    def get_config(self, fpath, repname, encoder_name) -> IndexConfig:
-        key = self.get_key(fpath, repname, encoder_name)
+    def get_index(self, index_config) :
+        # get the index by config
+        key = index_config.get_uid()
         try:
             val = self.cache[key.encode('utf-8')]
         except:
             val = None
         #printd(2, f'IM::loaded config -> {val}')
         return val
+
+    def has(self, index_config) :
+        # get the index by config
+        key = index_config.get_uid()
+        try:
+            val = self.cache[key.encode('utf-8')]
+        except:
+            val = None
+        #printd(2, f'IM::loaded config -> {val}')
+        return (val is not None)
+

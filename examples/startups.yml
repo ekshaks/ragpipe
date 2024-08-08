@@ -12,8 +12,11 @@ prompts:
 
 dbs:
   chroma:
-    path: /tmp/ragpipe
+    path: /tmp/ragpipe/chroma/
     name: chromadb
+  qdrant:
+    path: /tmp/ragpipe/qdrant/
+    name: qdrantdb
 
 encoders:
   bge_small:
@@ -31,7 +34,7 @@ representations:
         sparse: {encoder: splade}
 
     .documents[].description:
-        dense: {encoder: bge_small, store: chroma}
+        dense: {encoder: bge_small, store: qdrant}
         sparse: {encoder: splade}
 
 bridges:

@@ -5,10 +5,12 @@ litellm
 chromadb
 jinja2
 typer
-pytest==8.0.0
-ipykernel==6.29.0
+pytest
+ipykernel
 mkdocs-material
 jsonlines
 transformers
 torch
 diskcache
+safetensors
+qdrant-client

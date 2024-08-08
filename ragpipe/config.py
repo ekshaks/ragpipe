@@ -19,18 +19,28 @@ def split_str_to_list(v):
         return [x.strip() for x in v.split(',')]
     return v
 
+class EncoderRepConfig(BaseModel, frozen=True):
+    model_config = ConfigDict(extra='forbid')
+    rep_type: str = 'single_vector'
+    size: int = 384
+    dtype: str = 'float32'
+    
 class EncoderConfig(BaseModel, frozen=True): 
     model_config = ConfigDict(extra='forbid')
 
     name: str
+    prompt: Optional[str] = None
+
+    #TODO refactor below into EncoderRepConfig
+    #rep_config: Optional[EncoderRepConfig] = None
     dtype: Optional[str] = ''
     size: Optional[int] = None
-    prompt: Optional[str] = None
 
 class DBConfig(BaseModel, frozen=True):
     model_config = ConfigDict(extra='forbid')
-    name: str = 'chromadb'
+    name: Literal['chromadb', 'qdrantdb', 'tensordb'] = 'chromadb' 
     path: str = '/tmp/ragpipe/'
+
 
 class RepConfig(BaseModel):
     model_config = ConfigDict(extra='forbid')

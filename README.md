@@ -150,7 +150,7 @@ def rag():
 Ragpipe relies on 
 - `rank_bm25`: for BM25 based retrieval
 - `fastembed`: dense and sparse embeddings
-- `chromadb`: default vector database (more coming..)
+- `chromadb`, `qdrant-client`: vector databases (more coming..)
 - `litellm`: interact with LLM APIs
 - `jinja2`: prompt formatting
 - `LlamaIndex`: for parsing documents

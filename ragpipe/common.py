@@ -100,5 +100,17 @@ def get_fpath_items(fpath, D):
     printd(3, f'get_fpath_items = {type(items)}, {len(items)}')
     return DotDict(els=items, paths=item_paths)
 
-def fpath2collection(fpath, repname):
+def get_collection_name(fpath, repname):
     return 'C_' + fpath.replace('[]', '-').replace('.', '_') + f'_{repname}' + '_C'
+
+
+
+def generate_uuid_from_string(input_string, N=64):
+    import hashlib,uuid
+    # Create a SHA-256 hash of the input string
+    hash_object = hashlib.sha256(input_string.encode())
+    # Get the hexadecimal representation of the hash
+    hex_dig = hash_object.hexdigest()
+    # Use the first 32 characters (16 bytes) to create a UUID
+    uuid_generated = uuid.uuid4(hex_dig[:N])
+    return uuid_generated

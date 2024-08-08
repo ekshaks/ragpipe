@@ -1,33 +1,26 @@
-from typing import Union, List
+from typing import Union, List, Any, Optional
 from pathlib import Path
 from .common import DEFAULT_LIMIT
 
 import chromadb
 from pydantic import BaseModel
+
+from .ops import qD_cosine_similarity
 from safetensors import safe_open as st_safe_open
 from safetensors.torch import save_file as st_save_file
 
 from .common import printd, DotDict
+import uuid
+
+
 from .docnode import ScoreNode #can we remove this dep?
-
-def qD_cosine_similarity(doc_embeddings: 'list(d,)'=None, query_embedding: '(d,)'=None):
-    import torch.nn.functional as F
-    from torch import stack
-
-    assert doc_embeddings is not None and query_embedding is not None
-    doc_embeddings = stack(doc_embeddings) #(d,)* -> (n, d)
-    scores = F.cosine_similarity(query_embedding.unsqueeze(0), doc_embeddings).tolist()
-    #scores = [ F.cosine_similarity(query_embedding, demb, dim=0) for demb in doc_embeddings]
-    return scores
-
-
 
 def exact_nn(doc_embeddings, doc_paths, rep_query, similarity_fn=None, limit=None) -> List[ScoreNode]:
     '''Exact nearest neighbors of rep_query and doc_embeddings
     doc_embeddings: list of single- or multi-vector embeddings
     doc_paths: path to each doc part 
     req_query: single vector embedding
-    TODO: optimize!
+    TODO: return SearchResults(doc_path=, score=) -> sort() -> ScoreNode.fromResults(..)
     '''
     if similarity_fn is None:
         similarity_fn = qD_cosine_similarity
@@ -95,6 +88,10 @@ class StorageConfig(BaseModel):
     db_props: DBConfig
     collection_name: str
     rep_type: str = 'single_vector'
+    size: Optional[int] = 384 #TODO: move this to rep_type config
+
+    def get_dimension(self):
+        return self.size
 
     @classmethod
     def from_kwargs(cls, **kwargs):
@@ -115,6 +112,7 @@ class StorageConfig(BaseModel):
         
         sc = cls(collection_name=collection_name, rep_type=rep_type, db_props=db_props)
         return sc
+
     
     def __init__(self, **kwargs):
         #if kwargs['rep_type'] == 'multi_vector':
@@ -123,6 +121,82 @@ class StorageConfig(BaseModel):
         Path(self.db_props.path).mkdir(parents=True, exist_ok=True)
 
 
+class _QdrantDB:
+    '''
+    collection_name: str
+    client: Any
+    dimension: int 
+    metric: str = 'cosine'
+
+    ref: https://colab.research.google.com/drive/1Bz8RSVHwnNDaNtDwotfPj0w7AYzsdXZ-?usp=sharing#scrollTo=UHpR7nNreM1B
+    '''
+
+    def __init__(self, collection_name, dimension, path=None, metric='cosine', recreate=False):
+        import qdrant_client as qc
+        from qdrant_client.models import Distance, VectorParams
+
+        self.collection_name = collection_name
+        self.dimension = dimension
+
+        if path:
+            self.client = qc.QdrantClient(path=path) 
+        else:
+            self.client = qc.QdrantClient(":memory:")
+
+        match metric:
+            case 'cosine': distance = Distance.COSINE
+            case 'l2': distance = Distance.EUCLID
+            case 'dot': distance = Distance.DOT
+            case _: raise ValueError(f'unknown metric {metric}')
+
+        vparams = VectorParams(
+                    size=self.dimension,
+                    distance=distance,
+                )
+        config = dict(collection_name=self.collection_name,
+                    vectors_config = vparams,
+                    #optimizers_config=qmodels.OptimizersConfigDiff(memmap_threshold=20000),
+                    #hnsw_config=qmodels.HnswConfigDiff(on_disk=True)
+                      )
+        
+        exists = self.client.collection_exists(collection_name)
+        if (not exists) or recreate:
+            self.client.recreate_collection(**config)
+
+    
+    def add(self, reps, paths):
+        from qdrant_client.models import  Batch
+        printd(2, f'add {len(paths)} to Qdrantdb')
+        self.client.upsert(
+            collection_name=self.collection_name,
+            points=Batch(
+                ids = [str(uuid.uuid5(uuid.NAMESPACE_OID, p)) for p in paths],
+                vectors=reps,
+                payloads=[dict(path=p) for p in paths]
+            ),
+        )
+
+    def retrieve(self, rep_query, limit=None):
+        if not isinstance(rep_query, list):
+            rep_query = rep_query.tolist()
+
+        results = self.client.search(
+            collection_name=self.collection_name,
+            query_vector=rep_query,
+            #query_filter=_filter,
+            limit=limit,
+            with_payload=True,
+        )
+
+        docnodes = [
+            ScoreNode(
+                doc_path = res.payload['path'],
+                score = res.score
+            )
+            for res in results
+        ]
+
+        return docnodes
 
 class Storage:
     def __init__(self, config: StorageConfig) -> None:
@@ -134,6 +208,9 @@ class Storage:
             case 'chromadb':
                 self.client = chromadb.PersistentClient(path=dbp.path)
                 self.collection = self.client.get_or_create_collection(self.C.collection_name)
+            case 'qdrantdb':
+                self.db = _QdrantDB(collection_name=self.C.collection_name, dimension=self.C.get_dimension(),
+                                     path=dbp.path)
             case 'tensordb':
                 self.collection = TensorCollection(dbpath=dbp.path, collection=self.C.collection_name)
             case _:
@@ -153,7 +230,7 @@ class Storage:
 
     def add(self, reps, paths):
         dbname = self.C.db_props.name
-        printd(2, f'adding to storage {dbname} - paths: {paths}')
+        printd(2, f'adding to storage {dbname} - paths: {paths[0]}-{paths[-1]}')
         match dbname:
             case 'chromadb':
                 self.collection.add(
@@ -163,6 +240,11 @@ class Storage:
                 )
             case 'tensordb':
                 self.collection.add(reps, paths)
+            
+            case 'qdrantdb':
+                self.db.add(reps, paths)
+            case _:
+                raise ValueError(f'Unsupported database {dbname}')
 
     def retrieve_chromadb(self, rep_query, limit=DEFAULT_LIMIT):
         # do nearest neighbor search to find similar embeddings or documents, supports filtering
@@ -195,6 +277,8 @@ class Storage:
                 docnodes = self.retrieve_chromadb(rep_query.tolist(), limit=limit)
             case 'tensordb':
                 docnodes = self.retrieve_tensordb(rep_query, similarity_fn=similarity_fn, limit=limit)
+            case 'qdrantdb':
+                docnodes = self.db.retrieve(rep_query, limit=limit)
             case _:
                 raise NotImplementedError(f'retrieve: {dbname}')
         return docnodes
