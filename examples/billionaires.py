@@ -39,9 +39,9 @@ def build_data_model(md_file):
 def match_year(query_index: 'ObjectIndex', doc_index):
     from ragpipe.docnode import ScoreNode
     #print(query_index, doc_index)
-    year = query_index.get_query_rep()['metadata']['year']
+    year: int = query_index.get_query_rep()['metadata']['year']
     docpath_scores = [ScoreNode(doc_path=doc_path, score=1.0) for doc_rep, doc_path in doc_index.items()
-        if year in doc_rep]
+        if str(year) in doc_rep]
     return docpath_scores
 
 def main():

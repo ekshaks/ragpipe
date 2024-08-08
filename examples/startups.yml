@@ -17,6 +17,13 @@ dbs:
   qdrant:
     path: /tmp/ragpipe/qdrant/
     name: qdrantdb
+    options:
+      vector:
+        distance: 'cosine'
+      optimizers:
+        memmap_threshold: 20000
+      hnsw:
+        on_disk: true
 
 encoders:
   bge_small:

@@ -131,7 +131,7 @@ class _QdrantDB:
     ref: https://colab.research.google.com/drive/1Bz8RSVHwnNDaNtDwotfPj0w7AYzsdXZ-?usp=sharing#scrollTo=UHpR7nNreM1B
     '''
 
-    def __init__(self, collection_name, dimension, path=None, metric='cosine', recreate=False):
+    def __init__(self, collection_name, dimension, path=None, distance='cosine', recreate=False):
         import qdrant_client as qc
         from qdrant_client.models import Distance, VectorParams
 
@@ -143,15 +143,15 @@ class _QdrantDB:
         else:
             self.client = qc.QdrantClient(":memory:")
 
-        match metric:
-            case 'cosine': distance = Distance.COSINE
-            case 'l2': distance = Distance.EUCLID
-            case 'dot': distance = Distance.DOT
-            case _: raise ValueError(f'unknown metric {metric}')
+        match distance:
+            case 'cosine': distancev = Distance.COSINE
+            case 'l2': distancev = Distance.EUCLID
+            case 'dot': distancev = Distance.DOT
+            case _: raise ValueError(f'unknown metric {distance}')
 
         vparams = VectorParams(
                     size=self.dimension,
-                    distance=distance,
+                    distance=distancev,
                 )
         config = dict(collection_name=self.collection_name,
                     vectors_config = vparams,

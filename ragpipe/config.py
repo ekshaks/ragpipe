@@ -2,7 +2,7 @@
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from pydantic.fields import FieldInfo
 
-from typing import Dict, List, Optional, Union, Literal
+from typing import Dict, List, Optional, Union, Literal, Any
 from typing_extensions import Self
 
 '''
@@ -40,6 +40,7 @@ class DBConfig(BaseModel, frozen=True):
     model_config = ConfigDict(extra='forbid')
     name: Literal['chromadb', 'qdrantdb', 'tensordb'] = 'chromadb' 
     path: str = '/tmp/ragpipe/'
+    options: Optional[Dict[str, Dict]] = {}
 
 
 class RepConfig(BaseModel):
@@ -100,7 +101,7 @@ class RPConfig(BaseModel):
     merges: Dict[str, MergeConfig]
     enabled_merges: Optional[List] = Field(default_factory=list)
     queries: Optional[List[str]] = []
-    etc: Optional[Dict[str,str]] = {}
+    etc: Optional[Dict[str,Any]] = {}
 
     @field_validator('enabled_merges', mode='before')
     @classmethod
@@ -142,10 +143,26 @@ class RPConfig(BaseModel):
 import typer
 appt = typer.Typer()
 
-def load_config(fname, show=False):
+def deep_update(source, overrides):
+    """Recursively update the source dictionary with overrides."""
+    for key, value in overrides.items():
+        if isinstance(value, dict) and key in source:
+            source[key] = deep_update(source.get(key, {}), value)
+        else:
+            source[key] = value
+    return source
+
+def load_config(fname, overrides_fname=None, show=False):
     import yaml
     with open(fname, 'r') as file:
-        config = RPConfig(**yaml.load(file, Loader=yaml.FullLoader))
+        configd = yaml.load(file, Loader=yaml.FullLoader)
+
+    if overrides_fname is not None:
+        with open(overrides_fname, 'r') as file:
+            overrides_configd = yaml.load(file, Loader=yaml.FullLoader)
+        configd = deep_update(configd, overrides_configd)
+    
+    config = RPConfig(**configd)
     
     if show:
         from pprint import pprint
