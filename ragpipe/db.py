@@ -1,36 +1,14 @@
-from typing import Union, List, Any, Optional
+from typing import Union, Optional
 from pathlib import Path
-from .common import DEFAULT_LIMIT
-
-import chromadb
-from pydantic import BaseModel
-
-from .ops import qD_cosine_similarity
-from safetensors import safe_open as st_safe_open
-from safetensors.torch import save_file as st_save_file
-
-from .common import printd, DotDict
 import uuid
 
+#import chromadb
+from pydantic import BaseModel
+
+from .common import printd, DotDict, DEFAULT_LIMIT
+from .ops import exact_nn
 
 from .docnode import ScoreNode #can we remove this dep?
-
-def exact_nn(doc_embeddings, doc_paths, rep_query, similarity_fn=None, limit=None) -> List[ScoreNode]:
-    '''Exact nearest neighbors of rep_query and doc_embeddings
-    doc_embeddings: list of single- or multi-vector embeddings
-    doc_paths: path to each doc part 
-    req_query: single vector embedding
-    TODO: return SearchResults(doc_path=, score=) -> sort() -> ScoreNode.fromResults(..)
-    '''
-    if similarity_fn is None:
-        similarity_fn = qD_cosine_similarity
-    printd(3, f'exact_nn shapes: doc = {doc_embeddings[0].size()}, query = {rep_query.size()}')
-    scores = similarity_fn(doc_embeddings=doc_embeddings, query_embedding=rep_query)
-    printd(3, f'exact_nn: scores = {scores}')
-    doc_nodes = [ScoreNode(doc_path=doc_path, is_ref=True, score=score) 
-        for doc_path, score in zip(doc_paths, scores)]
-    doc_nodes = sorted(doc_nodes, key=lambda x: x.score, reverse=True)[:limit]
-    return doc_nodes
 
 class TensorCollection:
     def __init__(self, dbpath, collection):
@@ -65,6 +43,8 @@ class TensorCollection:
         return doc_embeddings, doc_paths
     
     def add(self, reps, paths):
+        from safetensors.torch import save_file as st_save_file
+
         tensor_dict = {}
         for path, rep in zip(paths, reps):
             upd_dict = TensorCollection.flatten(path, rep)
@@ -72,13 +52,17 @@ class TensorCollection:
         st_save_file(tensor_dict, self.file_path)
 
     def retrieve(self, rep_query, similarity_fn=None, limit=DEFAULT_LIMIT):
+        from safetensors import safe_open as st_safe_open
+
         tensor_dict = {}
         with st_safe_open(self.file_path, framework="pt", device="cpu") as f:
             for path in f.keys():
                 tensor_dict[path] = f.get_tensor(path)
         printd(2, f'TensorColl.retrieve: {list(tensor_dict.keys())}')
         doc_embeddings, doc_paths = TensorCollection.unflatten(tensor_dict)
-        docnodes = exact_nn(doc_embeddings, doc_paths, rep_query, similarity_fn=similarity_fn, limit=limit)
+        results = exact_nn(doc_embeddings, doc_paths, rep_query, similarity_fn=similarity_fn, limit=limit)
+        #results: '(doc_path | score)*' #sorted
+        docnodes = [ScoreNode(doc_path=r['doc_path'], is_ref=True, score=r['score']) for r in results]
         return docnodes
 
         
@@ -203,10 +187,11 @@ class Storage:
         self.C = config
         print(f'init storage: {config}, {type(config)}')
         dbp = config.db_props
+        from chromadb import PersistentClient
 
         match dbp.name:
             case 'chromadb':
-                self.client = chromadb.PersistentClient(path=dbp.path)
+                self.client = PersistentClient(path=dbp.path)
                 self.collection = self.client.get_or_create_collection(self.C.collection_name)
             case 'qdrantdb':
                 self.db = _QdrantDB(collection_name=self.C.collection_name, dimension=self.C.get_dimension(),

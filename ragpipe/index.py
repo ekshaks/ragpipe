@@ -1,6 +1,7 @@
 
+from .ops import exact_nn
 from .common import DEFAULT_LIMIT, printd
-from .db import Storage, StorageConfig, exact_nn
+from .db import Storage, StorageConfig
 
 
 from pydantic import BaseModel
@@ -112,9 +113,11 @@ class RPIndex(): #rag pipe index
         return self.doc_embeddings[0]
 
     def retrieve_in_mem(self, rep_query, similarity_fn=None, limit=None):
-        return exact_nn(self.doc_embeddings, self.doc_paths, rep_query,
+        results = exact_nn(self.doc_embeddings, self.doc_paths, rep_query,
                         similarity_fn=similarity_fn,
                         limit=limit)
+        docnodes = [ScoreNode(doc_path=r['doc_path'], is_ref=True, score=r['score']) for r in results]
+        return docnodes
 
     def retrieve(self, rep_query, limit=DEFAULT_LIMIT):
         if self.encoder.name == 'bm25':

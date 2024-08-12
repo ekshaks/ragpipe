@@ -13,7 +13,6 @@ from .db import StorageConfig
 
 IM = IndexManager()
 
-from . import llm_bridge
 from .encoders import BM25, get_encoder
 
 def encode_and_index(encoder, fpath, repname, items, item_paths, 
@@ -22,6 +21,7 @@ def encode_and_index(encoder, fpath, repname, items, item_paths,
     encoder_name = encoder.name
     
     if encoder_name.startswith('llm'):
+        from . import llm_bridge
         prompt = encoder.config.prompt
         reps = llm_bridge.transform(items, encoder_name, prompt=prompt, is_query=is_query)
         index_type = 'objindex'

@@ -4,6 +4,7 @@ from pydantic.fields import FieldInfo
 
 from typing import Dict, List, Optional, Union, Literal, Any
 from typing_extensions import Self
+from pathlib import Path
 
 '''
 prompts: dict(str, str)
@@ -152,13 +153,14 @@ def deep_update(source, overrides):
             source[key] = value
     return source
 
-def load_config(fname, overrides_fname=None, show=False):
+def load_config(fname, overrides_fname='overrides.yaml', show=False):
     import yaml
     with open(fname, 'r') as file:
         configd = yaml.load(file, Loader=yaml.FullLoader)
 
-    if overrides_fname is not None:
-        with open(overrides_fname, 'r') as file:
+    opath = Path(fname).parent / overrides_fname
+    if opath.exists():
+        with open(opath, 'r') as file:
             overrides_configd = yaml.load(file, Loader=yaml.FullLoader)
         configd = deep_update(configd, overrides_configd)
     

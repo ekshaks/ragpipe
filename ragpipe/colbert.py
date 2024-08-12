@@ -1,5 +1,3 @@
-import torch
-from transformers import AutoTokenizer, AutoModel
 from typing import List
 from .common import printd
 
@@ -9,9 +7,14 @@ class Colbert:
                 tokenizer:str = "colbert-ir/colbertv2.0",
                 max_length:int = 512
     ):
+        from transformers import AutoTokenizer, AutoModel
+        
         self._tokenizer = AutoTokenizer.from_pretrained(tokenizer)
         self._model = AutoModel.from_pretrained(model)
         self.MAX_LENGTH = max_length
+
+        import torch
+        self.torch = torch
         print('Loaded Colbert model')
 
     def get_text_embedding(self, text: str):
@@ -42,7 +45,7 @@ class Colbert:
         if len(query_embeddings.size()) == 2: #for ragpipe
             query_embeddings = query_embeddings.unsqueeze(0) #1,ql,d
 
-        scores = torch.matmul(query_embeddings, document_embeddings.transpose(1, 2))
+        scores = self.torch.matmul(query_embeddings, document_embeddings.transpose(1, 2))
         
         # Apply max-pooling across document terms (dim=2) to find the max similarity per query term
         # Shape after max-pool: [k, num_query_terms]
@@ -65,14 +68,14 @@ class Colbert:
             # Query: b,ql,d -> b,ql,1,d
             # D: b,docl,d -> b,1,docl,d
 
-            sim_matrix = torch.nn.functional.cosine_similarity(
+            sim_matrix = self.torch.nn.functional.cosine_similarity(
                 query_embedding.unsqueeze(2), document_embedding.unsqueeze(1), dim=-1
             )
             sim_matrix: 'b,ql,docl'
 
-            max_sim_scores, _ = torch.max(sim_matrix, dim=2) #b, ql (max over doc length)
+            max_sim_scores, _ = self.torch.max(sim_matrix, dim=2) #b, ql (max over doc length)
             #print(max_sim_scores)
-            score = torch.mean(max_sim_scores, dim=1) #b (mean over query length)
+            score = self.torch.mean(max_sim_scores, dim=1) #b (mean over query length)
             return score.item()
 
     def compute_similarity_embeddings(self, query_embedding=None, doc_embeddings=None):
