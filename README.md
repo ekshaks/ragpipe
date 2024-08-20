@@ -51,16 +51,8 @@ Using `pip`.
 pip install ragpipe
 ```
 
-Clone and install dependencies (recommended).
-```bash
-git clone https://github.com/ekshaks/ragpipe; cd ragpipe
-#install poetry
-curl -sSL https://install.python-poetry.org | python3 - 
-#install ragpipe dependencies
-poetry install 
-```
 
-Alternatively you could use conda to install all necessary dependencies.
+Alternatively, clone the repository and use `pip` to install dependencies.
 ```bash
 git clone https://github.com/ekshaks/ragpipe; cd ragpipe
 #creating a new environment with python 3.10
@@ -156,7 +148,7 @@ Ragpipe relies on
 - `LlamaIndex`: for parsing documents
 
 
-## Contribution
+## Contribute
 
 Ragpipe is open-source and under active development. We welcome contributions:
 - Try out ragpipe on queries over your data. Open an issue or send a pull request.
@@ -166,6 +158,10 @@ Ragpipe is open-source and under active development. We welcome contributions:
 
 Join discussion on our [Discord](https://discord.com/invite/ATWd8A5cEh) channel.
 
+
+## Troubleshooting
+
+- If you encounter errors related to protocol buffers, use the following fix: `export PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python`
 
 ## Read More
 

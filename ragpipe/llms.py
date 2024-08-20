@@ -18,7 +18,6 @@ class LocalLLM:
     ])
     return response['message']['content']
 
-local_llm = LocalLLM()
 
 
 def cloud_llm(prompt, model="groq/llama3-8b-8192"):
@@ -32,7 +31,7 @@ def cloud_llm(prompt, model="groq/llama3-8b-8192"):
 
   for prefix, api_key in prefix_key_pairs:
     if model.startswith(prefix) and api_key not in os.environ:
-        raise ValueError(f"{api_key} is not set in os.environ")
+        raise ValueError(f"{api_key} is not set in os.environ, or ragpipe/.env")
 
     
   response = completion(
@@ -47,6 +46,7 @@ def cloud_llm(prompt, model="groq/llama3-8b-8192"):
 
 def llm_router(prompt, model):
    if model.startswith('local/') or model.startswith('ollama/'):
+      local_llm = LocalLLM()
       return local_llm(prompt, model=model)
    else:
       return cloud_llm(prompt, model=model)
