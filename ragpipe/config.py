@@ -31,6 +31,7 @@ class EncoderConfig(BaseModel, frozen=True):
 
     name: str
     prompt: Optional[str] = None
+    query_instruction: Optional[str] = None
 
     #TODO refactor below into EncoderRepConfig
     #rep_config: Optional[EncoderRepConfig] = None

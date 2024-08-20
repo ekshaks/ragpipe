@@ -28,6 +28,7 @@ dbs:
 encoders:
   bge_small:
     name: BAAI/bge-small-en-v1.5
+    query_instruction: "Represent this sentence for searching relevant passages:"
   splade:
     name: prithivida/Splade_PP_en_v1
   stf:

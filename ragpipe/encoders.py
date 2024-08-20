@@ -159,7 +159,7 @@ class LlamaIndexEncoder(Encoder):
 
 class FastEmbedEncoder(Encoder):
     @classmethod
-    def from_config(cls, config): 
+    def from_config(cls, config: EncoderConfig): 
         dense_models = ["BAAI/bge-small-en-v1.5"]
         sparse_models = ["prithivida/Splade_PP_en_v1"]
         name = config.name
@@ -173,7 +173,14 @@ class FastEmbedEncoder(Encoder):
         return FastEmbedEncoder(name=name, mo_loader=model_loader, config=config,
                                 rep_type='single_vector')
 
+    def prefix_query_instruction(self, docs):
+        qi = self.config.query_instruction
+        if qi is not None:
+            docs = [ f'{qi} {d}' for d in docs]
+        return docs
+
     def encode(self, docs, is_query=False) -> 'List[torch.Tensor]': #for RPIndex
+        if is_query: docs = self.prefix_query_instruction(docs)
         encode_fn = self.get_model().embed #fastembed
         printd(2, 'fastembed encode ..')
         doc_embeddings = [np_to_torch(x) for x in encode_fn(docs, show_progress=True)]
