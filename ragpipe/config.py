@@ -20,23 +20,27 @@ def split_str_to_list(v):
         return [x.strip() for x in v.split(',')]
     return v
 
-class EncoderRepConfig(BaseModel, frozen=True):
+class EncoderShapeConfig(BaseModel, frozen=True):
     model_config = ConfigDict(extra='forbid')
     rep_type: str = 'single_vector'
     size: int = 384
     dtype: str = 'float32'
     
 class EncoderConfig(BaseModel, frozen=True): 
+    '''Combined config for Encoder and Indexer'''
     model_config = ConfigDict(extra='forbid')
 
     name: str
     prompt: Optional[str] = None
     query_instruction: Optional[str] = None
+    with_index: bool = False
+    module: Optional[str] = None #external module
 
-    #TODO refactor below into EncoderRepConfig
-    #rep_config: Optional[EncoderRepConfig] = None
+    #TODO refactor below into EncoderShapeConfig
     dtype: Optional[str] = ''
     size: Optional[int] = None
+    shape: Optional[EncoderShapeConfig] = None
+
 
 class DBConfig(BaseModel, frozen=True):
     model_config = ConfigDict(extra='forbid')
@@ -53,9 +57,11 @@ class RepConfig(BaseModel):
     store: Optional[Union[bool,str,DBConfig]] = False
 
     def update_encoder(self, encoders):
+        #print('updating RepConfig for ', self.encoder, type(self.encoder))
         if isinstance(self.encoder, str):
             econfig = encoders.get(self.encoder, None)
             if econfig is None: 
+                print('> enconfig None, call EncoderConfig')
                 econfig = EncoderConfig(name=self.encoder)
             #raise ValueError(f'Unable to find encoder : {self.encoder}')
             self.encoder = econfig
@@ -92,6 +98,7 @@ class MergeConfig(BaseModel):
     @classmethod
     def split_names(cls, v: FieldInfo):
         return split_str_to_list(v)
+
 
 class RPConfig(BaseModel):
     prompts: Optional[Dict[str, str]] = {} #name to prompt
@@ -133,6 +140,10 @@ class RPConfig(BaseModel):
             else:
                 raise ValueError(f'Please select at least one of the merges (use "enabled_merges"): {keys}.')
         
+        #add inbuilt encoders to self.encoders
+        if 'bm25' not in self.encoders:
+            BM25config = EncoderConfig(name='bm25', with_index=True)
+            self.encoders['bm25'] = BM25config
         # replace enc name with enc config
         for field_rep in self.representations.values():
             for repname, repconfig in field_rep.items():

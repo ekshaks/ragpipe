@@ -6,66 +6,51 @@ from typing import List
 from .index import IndexConfig, IndexManager, ObjectIndex, RPIndex
 
 
-from .common import get_fpath_items, get_collection_name, printd
+from .common import get_fpath_items, get_collection_name, printd, load_func
 from .docnode import ScoreNode
 
 from .db import StorageConfig
 
 IM = IndexManager()
 
-from .encoders import BM25, get_encoder
 
-def encode_and_index(encoder, fpath, repname, items, item_paths, 
-                 storage_config, is_query=False, index_type='rpindex'):
-    
-    encoder_name = encoder.name
-    
-    if encoder_name.startswith('llm'):
-        from . import llm_bridge
-        prompt = encoder.config.prompt
-        reps = llm_bridge.transform(items, encoder_name, prompt=prompt, is_query=is_query)
-        index_type = 'objindex'
+#def encode_and_index(encoder, fpath, repname, items, item_paths, 
+#                 storage_config, is_query=False, index_type='rpindex'):
+def encode_and_index(items, ic: IndexConfig, is_query=False):
+    ec = ic.encoder_config
+    encoder_name = ec.name
+    item_paths = ic.doc_paths
 
-    elif encoder_name == 'passthrough':
-        print('computing rep passthrough')
-        _repname = repname[1:] # _header -> header
-        reps = [item[_repname] for item in items]
-        index_type = 'objindex'
-    else: pass
+    if not is_query and ec.with_index:
+        print('encode_and-index: econfig = ', ec)
+        match encoder_name:
+            case 'bm25':
+                from ext.libs.bm25 import RankBM25Index
+                reps_index = RankBM25Index(items, item_paths)
+            case _:
+                if ec.module is not None:
+                    Indexer = load_func(ec.module)
+                    reps_index = Indexer()
+                    reps_index.add(items, item_paths, is_query=is_query)
+                else:
+                    raise ValueError(f'Unable to find enc-indexer {encoder_name}')
 
-    match index_type:
-        case 'llamaindex':
-            assert isinstance(items, list) and len(items) > 0, f"items is {type(items)}"
-            ic = IndexConfig(index_type=index_type, encoder_config=encoder.config, 
-                doc_paths=item_paths, storage_config=storage_config)
-            reps_index = VectorStoreIndexPath.from_docs(items, ic, encoder_model=encoder.get_model())
-            
-        case 'rpindex':
-            item_type = type(items[0]).__name__
-            if item_type != 'str': #handle LI text nodes. TODO: what if LI documents?
-                assert 'TextNode' in item_type, f'Expected item {repname} of type str, but found {item_type}'
-                items = [item.text for item in items]
+    else:
+        item_type = type(items[0]).__name__
+        if item_type != 'str': #handle LI text nodes. TODO: what if LI documents?
+            assert 'TextNode' in item_type, f'Expected item {ic.repname} of type str, but found {item_type}'
+            items = [item.text for item in items]
 
-            ic = IndexConfig(encoder_config=encoder.config, 
-                             storage_config=storage_config,
-                             fpath=fpath, repname=repname,
-                             doc_paths=item_paths)
-            reps_index = RPIndex(ic)
-            reps_index.add(docs=items, doc_paths=item_paths, is_query=is_query)
 
-        case 'objindex':
-            reps_index = ObjectIndex(reps=reps, paths=item_paths, is_query=is_query, 
-                                        docs_already_encoded=True) #
-
-        case 'noindex':
-            pass
-        case _:
-            raise ValueError(f"unknown index: {index_type}")
+        reps_index = RPIndex(index_config=ic)
+        reps_index.add(docs=items, doc_paths=item_paths, is_query=is_query)
         
     return reps_index
 
 
-def compute_rep(fpath, D, dbs, rep_props=None, repname=None, is_query=False) -> '*Index':
+def compute_rep(fpath, D, dbs, rep_props=None, repname=None, is_query=False) -> 'Index':
+    from .encoders import get_encoder_reptype
+
     #fpath = .sections[].text repname = dense
     assert rep_props is not None
     encoder_config = rep_props.encoder
@@ -73,13 +58,12 @@ def compute_rep(fpath, D, dbs, rep_props=None, repname=None, is_query=False) -> 
   
     ##encoder model loader, index_type, rep_type
     doc_leaf_type = D.get('doc_leaf_type', 'raw')
-    #encoder_config = dict(doc_leaf_type=doc_leaf_type) #TODO: from props?
-    encoder = get_encoder(encoder_config, doc_leaf_type=doc_leaf_type) #
+    rep_type = get_encoder_reptype(encoder_config)
 
     storage_config = None if not rep_props.store else\
           StorageConfig.from_kwargs(
             collection_name=get_collection_name(fpath,repname), 
-            rep_type = encoder.rep_type,
+            rep_type = rep_type,
             dbs=dbs, #lookup its db from list
             db_props=rep_props.store
          )
@@ -99,8 +83,9 @@ def compute_rep(fpath, D, dbs, rep_props=None, repname=None, is_query=False) -> 
     else: #build reps, create index, if storage_confadd key to IM
         printd(2, f'Not found in IndexManager cache: {repname}, {encoder_config.name}. Creating reps.')
         #TODO: replace as many args by index_config
-        reps_index: '..Index' = encode_and_index(encoder, fpath, repname, items, item_paths,
-                    storage_config, is_query=is_query, index_type='rpindex')
+        #reps_index: '..Index' = encode_and_index(encoder, fpath, repname, items, item_paths,
+        #            storage_config, is_query=is_query, index_type='rpindex')
+        reps_index = encode_and_index(items, index_config, is_query=is_query)
         
         if storage_config is not None: #does making a query rpindex make sense? change query?
             printd(2, f'... adding to index.')
@@ -120,22 +105,6 @@ def retriever_router(doc_index, query_text, query_index, limit=10): #TODO: rep_q
     printd(3, f'retriever_router: doc_index type {type(doc_index)}, {type(query_index)}')
     #print(doc_index)
     #print(query_index)
-    assert(isinstance(query_index, RPIndex)), f'query_index type= {type(query_index)} '
     rep_query = query_index.get_query_rep()
-
-    match doc_index:
-        # case VectorStoreIndexPath():
-        #     query_bundle = QueryBundle(query_str=query_text, embedding=rep_query)
-        #     retriever = VectorIndexRetriever(index=doc_index.get_vector_store_index(), similarity_top_k=limit)
-        #     li_nodes = retriever.retrieve(query_bundle)
-        #     #vector_ids = {n.node.node_id for n in vector_nodes}
-        #     doc_nodes = [ScoreNode(li_node=n, score=n.score) for n in li_nodes]
-
-        #     return doc_nodes
-
-        case RPIndex():
-            doc_nodes: List[ScoreNode] = doc_index.retrieve(rep_query, limit=limit) #only refs
-            return doc_nodes
-        
-        case _:
-            raise NotImplementedError(f'unknown index: {doc_index}')
+    doc_nodes: List[ScoreNode] = doc_index.retrieve(rep_query, limit=limit) #only refs
+    return doc_nodes

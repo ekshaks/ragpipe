@@ -4,10 +4,10 @@ from .common import DEFAULT_LIMIT, printd
 from .db import Storage, StorageConfig
 
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 import uuid
 
-from typing import List, Optional
+from typing import List, Optional, Any
 
 from .docnode import ScoreNode
 from .encoders import get_encoder
@@ -48,36 +48,49 @@ class IndexConfig(BaseModel):
         self.doc_paths.extend(doc_paths)
 
 
-
-class RPIndex(): #rag pipe index
-
-    # def __init__(self, encoder,
-    #              storage_config: StorageConfig =None):
-    #     self.encoder = encoder
-    #     self.storage_config = storage_config
-
-    #     #for in mem storage
-    #     self.doc_paths = [] #update when add
-    #     self.doc_embeddings = [] #
-
-    #     self.is_query = False #update when 'add'
-    #     self.storage = None
+class BaseIndex(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
     
-    def __init__(self, ic: IndexConfig):
-        self.index_config = ic
-        self.encoder = get_encoder(ic.encoder_config)
+    doc_embeddings: List[Any] = [] #for in memory storage
+    doc_paths: List[str] = [] 
+    is_query: bool = False
+    index_config: IndexConfig = None
+
+    @classmethod
+    def from_index_config(cls, ic: IndexConfig):
+        return cls(index_config=ic)
+    
+    def add(self, docs, doc_paths, is_query=False, docs_already_encoded=False):
+        raise NotImplementedError()
+    def retrieve(self, rep_query, limit=DEFAULT_LIMIT):
+        raise NotImplementedError()
+    
+    def get_query_rep(self):
+        assert self.is_query, f'cant get rep from non-query index: {self.doc_paths}, {self.__class__}'
+        return self.doc_embeddings[0]
+    
+    def items(self):
+        for rep, path in zip(self.doc_embeddings, self.doc_paths):
+            yield rep, path
+    
+    def retrieve_in_mem(self, rep_query, similarity_fn=None, limit=None):
+        results = exact_nn(self.doc_embeddings, self.doc_paths, rep_query,
+                        similarity_fn=similarity_fn,
+                        limit=limit)
+        docnodes = [ScoreNode(doc_path=r['doc_path'], is_ref=True, score=r['score']) for r in results]
+        return docnodes
+    
+
+class RPIndex(BaseIndex): #ragpipe index
+    
+    def __init__(self, **data):
+        super().__init__(**data)
+        ic = self.index_config
         self.storage_config = ic.storage_config
-
-        #for in mem storage
-        self.doc_paths = [] #update when add
-        self.doc_embeddings = [] #
-
-        self.is_query = False #update when 'add'
+        self.encoder = None
         self.storage = None
-
-    def get_index_config(self): return self.index_config
-        #return IndexConfig(index_type='rpindex', storage_config=self.storage_config,
-        #                   encoder_config=self.encoder.config, doc_paths=self.doc_paths)
 
     def get_storage(self):
         if self.storage is None:
@@ -85,19 +98,19 @@ class RPIndex(): #rag pipe index
             self.storage = Storage(self.storage_config)
         return self.storage
 
-    @classmethod
-    def from_index_config(cls, ic: IndexConfig):
-        return cls(ic)
-
+    def get_encoder(self):
+        if self.encoder is None:
+            self.encoder = get_encoder(self.index_config.encoder_config)
+        return self.encoder
 
     def add(self, docs, doc_paths, is_query=False, docs_already_encoded=False):
         self.doc_paths.extend(doc_paths)
-
         self.is_query = is_query
-        if not docs_already_encoded:
-            #doc_embeddings = encode_fn(self.encoder_model, docs)
-            doc_embeddings = self.encoder.encode(docs, is_query=is_query)
 
+        #TODO: .encode -> emb generator -> (storage.add | list)
+        if not docs_already_encoded:
+            encoder = self.get_encoder()
+            doc_embeddings = encoder.encode(docs, is_query=is_query)
         else:
             doc_embeddings = docs
 
@@ -106,28 +119,17 @@ class RPIndex(): #rag pipe index
             storage.add(doc_embeddings, doc_paths)
         else:
             self.doc_embeddings = doc_embeddings
-
-
-    def get_query_rep(self):
-        assert self.is_query, f'cant get rep from non-query index: {self.doc_paths}'
-        return self.doc_embeddings[0]
-
-    def retrieve_in_mem(self, rep_query, similarity_fn=None, limit=None):
-        results = exact_nn(self.doc_embeddings, self.doc_paths, rep_query,
-                        similarity_fn=similarity_fn,
-                        limit=limit)
-        docnodes = [ScoreNode(doc_path=r['doc_path'], is_ref=True, score=r['score']) for r in results]
-        return docnodes
+    
 
     def retrieve(self, rep_query, limit=DEFAULT_LIMIT):
-        if self.encoder.name == 'bm25':
-            bm = self.doc_embeddings
-            doc_nodes = bm.retrieve(rep_query, limit=limit)
-            for d in doc_nodes:
-                d.doc_path = self.doc_paths[d.doc_path_index]
-            return doc_nodes
-        
-        similarity_fn = self.encoder.get_similarity_fn()
+        # if self.encoder.name == 'bm25':
+        #     bm = self.doc_embeddings
+        #     doc_nodes = bm.retrieve(rep_query, limit=limit)
+        #     for d in doc_nodes:
+        #         d.doc_path = self.doc_paths[d.doc_path_index]
+        #     return doc_nodes
+        encoder = self.get_encoder()
+        similarity_fn = encoder.get_similarity_fn()
 
         doc_nodes: List[ScoreNode]
         if self.storage_config is None:

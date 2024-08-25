@@ -32,19 +32,37 @@ def build_data_model(md_file):
         headers = [ v.strip() for key, v in node.metadata.items() if 'Header' in key]
         headerpath = ' > '.join(headers)
         #print(headerpath)
-        sections.append(DotDict(headerpath=headerpath, node=node))
+        sections.append(DotDict(headerpath=headerpath, text=node.get_content()))
     D = DotDict(sections=sections)
     return D
 
+def tfm_dp(path, tfm):
+    parts = tfm.split(',')
+    opath = path
+    for p in parts:
+        match p:
+            case '..':
+                pparts = opath.split('.')
+                if len(pparts) > 1:
+                    opath = '.'.join(pparts[:-1])
+                else:
+                    raise ValueError('Invalid op: {p} on {opath} ')
+            case _:
+                opath = opath + p
+    return opath
+
 def match_year(query_index: 'ObjectIndex', doc_index):
     from ragpipe.docnode import ScoreNode
-    #print(query_index, doc_index)
+    #print('Query Index: ', query_index)
+    #print('Doc Index: ', doc_index)
     year: int = query_index.get_query_rep()['metadata']['year']
-    docpath_scores = [ScoreNode(doc_path=doc_path, score=1.0) for doc_rep, doc_path in doc_index.items()
+    print(f'year = {year}')
+    # rule based bridge. for the doc paths filtered by the bridge, pick ..text as the new docpath
+    docpath_scores = [ScoreNode(doc_path=tfm_dp(dp, '..,.text'), is_ref=True, score=1.0) for doc_rep, dp in doc_index.items()
         if str(year) in doc_rep]
     return docpath_scores
 
-def main():
+def main(respond_flag=True):
     from ragpipe.config import load_config
     config = load_config('examples/billionaires.yml', show=True)
     
@@ -62,12 +80,15 @@ def main():
     from ragpipe.bridge import bridge_query_doc
 
     docs_retrieved = bridge_query_doc(query_text, D, config)
-    print('Documents: ', docs_retrieved) #response generator
+    #print('Documents: ', docs_retrieved) #response generator
 
-    from ragpipe.llms import respond_to_contextual_query
+    if respond_flag:
+        from ragpipe.llms import respond_to_contextual_query
 
-    resp = respond_to_contextual_query(query_text, docs_retrieved, config.prompts['qa']) 
-    print('Answer:\n', resp)
+        resp = respond_to_contextual_query(query_text, docs_retrieved, config.prompts['qa']) 
+        print('Answer:\n', resp)
+    
+    return docs_retrieved
 
 
 

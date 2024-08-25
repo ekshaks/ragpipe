@@ -70,6 +70,7 @@ llm_models:
 
 etc:
   data_folder: ./data
+  
 queries:
   - healthcare
   - fashion

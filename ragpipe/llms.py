@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 load_dotenv()  # Load the .env file
 
 class LocalLLM:
-  def __init__(self, host='http://192.168.0.171:11434') -> None:
+  def __init__(self, host='http://localhost:11434') -> None:
     from ollama import Client
     self.client = Client(host=host)
   
@@ -20,9 +20,11 @@ class LocalLLM:
 
 
 
-def cloud_llm(prompt, model="groq/llama3-8b-8192"):
+def cloud_llm(prompt, model=None):
   from litellm import completion
   import os
+
+  model = model or "groq/llama3-8b-8192"
 
   prefix_key_pairs = [
      ('groq/', 'GROQ_API_KEY'),
@@ -44,10 +46,14 @@ def cloud_llm(prompt, model="groq/llama3-8b-8192"):
     #print(response)
   return response['choices'][0]['message']['content']
 
-def llm_router(prompt, model):
-   if model.startswith('local/') or model.startswith('ollama/'):
-      local_llm = LocalLLM()
-      return local_llm(prompt, model=model)
+def llm_router(prompt, model=None, ollama_host=None):
+   if model and\
+      (model.startswith('local/') or model.startswith('ollama/')):
+      
+      local_llm = LocalLLM(host=ollama_host)
+      parts = model.split('/', 1)
+      if len(parts) < 1: raise ValueError(f'Invalid model name: {model}')
+      return local_llm(prompt, model=parts[1])
    else:
       return cloud_llm(prompt, model=model)
       

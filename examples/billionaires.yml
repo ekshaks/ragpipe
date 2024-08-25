@@ -14,13 +14,13 @@ representations:
         metadata:
             encoder: llm/query_decomposer
             #prompt: 
-    .sections[]:
+    .sections[].headerpath:
         _headerpath:
             encoder: passthrough
 
 bridges:
     b1:
-        repnodes: query.text#metadata, .sections[]#_headerpath
+        repnodes: query.text#metadata, .sections[].headerpath#_headerpath
         matchfn: examples.billionaires.match_year
         limit: 10
 
