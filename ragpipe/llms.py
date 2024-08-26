@@ -64,3 +64,14 @@ def respond_to_contextual_query(query, docs_retrieved, prompt_templ, model='groq
     prompt = eval_template(prompt_templ, documents=docs_texts, query=query)
     resp = llm_router(prompt, model=model)
     return resp
+
+
+def test():
+    #from ragpipe.llms import cloud_llm, llm_router
+    resp = llm_router('are you there?')
+    print(resp)
+    resp = llm_router('are you there?', model='ollama/llama3.1')
+    print(resp)
+
+if __name__ == '__main__':
+   test()

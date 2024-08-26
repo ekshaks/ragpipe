@@ -4,7 +4,11 @@ from ragpipe.docnode import ScoreNode
 class BMXIndex(BaseIndex):
     def __init__(self, **data):
         super().__init__(**data)
-        from baguetter.indices import BMXSparseIndex
+        try:
+            from baguetter.indices import BMXSparseIndex
+        except Exception as e:
+            print('To use BMX: please `pip install baguetter`')
+            raise e
         self.idx = BMXSparseIndex()
 
     def add(self, docs, doc_paths, is_query=False, docs_already_encoded=False):

@@ -98,6 +98,13 @@ class MergeConfig(BaseModel):
     @classmethod
     def split_names(cls, v: FieldInfo):
         return split_str_to_list(v)
+    
+    def update_bridges_from_expr(self):
+        if self.method == 'expr':
+            import sympy as sp
+            e = sp.sympify(self.expr)
+            bs = list(map(str, e.free_symbols))
+            self.bridges.extend(bs)
 
 
 class RPConfig(BaseModel):
@@ -150,6 +157,8 @@ class RPConfig(BaseModel):
                 repconfig.update_encoder(self.encoders)
                 repconfig.update_store(dbs)
         
+        for mk, mc in self.merges.items():
+            mc.update_bridges_from_expr()
         return self
 
 

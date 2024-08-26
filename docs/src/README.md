@@ -53,9 +53,9 @@ def main(respond_flag=False):
 
     query_text = config.queries[1] #L3
 
-    from ragpipe.bridge import bridge_query_doc
+    from ragpipe import Retriever
 
-    docs_retrieved = bridge_query_doc(query_text, D, config) #L4
+    docs_retrieved = Retriever(config).eval(query_text, D) #L4
 
     for doc in docs_retrieved: doc.show() #l5
 
@@ -73,7 +73,7 @@ In `main`, we implement the following steps:
 - `#L2` read the data files (`niva-short.mmd`) to build a doc model `D` with following nested fields 
     -  `query.text` which contains the query string 
     - `.sections[].node` which contains the document snippets
-- `#L4` all the heavy lifting happens in `ragpipe.bridge_query_doc` function based on definitions from `insurance.yml`
+- `#L4` all the heavy lifting happens in `ragpipe.Flow` function based on definitions from `insurance.yml`
     - compute `#dense` representations for `query.text` and `.sections[].node` fields using `colbert-ir/colbertv2.0`
     - rank documents according to the bridge `b1` across the two representations `query.text#dense`, `.sections[].node#dense`
     - compute a merge `c1` to obtain the final ranked list. In this case, the merge is trivial since only a single bridge is defined. 
@@ -81,4 +81,14 @@ In `main`, we implement the following steps:
 
 ## Key Dependencies
 
-The current ragpipe version relies on LlamaIndex for parsing, litellm for talking to LLMs.
+Ragpipe relies on 
+- `rank_bm25`: for BM25 based retrieval
+- `fastembed`: dense and sparse embeddings
+- `chromadb`, `qdrant-client`: vector databases (more coming..)
+- `litellm`: interact with LLM APIs
+- `jinja2`: prompt formatting
+- `LlamaIndex`: for parsing documents
+
+To keep Ragpipe lean, we restrict the key dependencies to only a few.
+
+Additional encoders, vector databases can be added as plugins to `ext/libs` and loaded dynamically.

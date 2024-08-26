@@ -3,11 +3,11 @@ prompts:
     Answer the query based on the markdown documents.
     # query
 
-    {query}
+    {{query}}
 
     # documents
 
-    {documents}
+    {{documents}}
 
 representations:
     query.text:

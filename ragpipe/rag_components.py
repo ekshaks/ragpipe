@@ -79,7 +79,7 @@ def compute_rep(fpath, D, dbs, rep_props=None, repname=None, is_query=False) -> 
     index_exists = IM.has(index_config)
     if index_exists: #key exists, load index
         reps_index = RPIndex.from_index_config(index_config)
-        printd(2, f'Found in IndexManager cache: {index_config}.')
+        printd(2, f'Found in IndexManager cache. {repname}, {encoder_config.name}')
     else: #build reps, create index, if storage_confadd key to IM
         printd(2, f'Not found in IndexManager cache: {repname}, {encoder_config.name}. Creating reps.')
         #TODO: replace as many args by index_config

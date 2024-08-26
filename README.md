@@ -66,15 +66,6 @@ pip install -r requirements.txt
 Note: For CUDA support on Windows/Linux you might need to install PyTorch with CUDA compiled.
 For instructions follow https://pytorch.org/get-started/locally/
 
-## Key Ideas
-
-**Representations**. Choose the query/document fields as well as how to represent each chosen query / document field to aid similarity/relevance computation (*bridges*) over the entire document repository. Representations can be text strings, dense/sparse vector embeddings or arbitrary data objects, and help *bridge* the gap between the query and the documents.
-
-**Bridges**. Choose a *pair* of query and document representation to *bridge*. A bridge serves as a relevance indicator: one of the several criteria for identifying the relevant documents for a query. In practice, several bridges together determine the degree to which a document is relevant to a query. A bridge is a ranker and top-k selector, rolled into one. Computing each bridge creates a unique ranked list of documents with respect to the relevance criteria.
-
-**Merges**. Specify how to combine the bridges, e.g., combine multiple ranked list of documents into a single ranked list using rank fusion.
-
-**Data Model**. A hierarchical data structure that consists of all the (nested) documents. The data model is created from the original document files and is retained over the entire pipeline. We compute representations for arbitrary nested fields of the data, without flattening the data tree.
 
 ## Querying with Ragpipe
 
@@ -113,7 +104,7 @@ The default LLM is [Groq](https://groq.com/). Please set GROQ_API_KEY in `.env`.
 
 ## API Usage
 
-Embed ragpipe into your Agentic query resolvers by delegating fine-grained retrieval to ragpipe.
+Embed ragpipe into your Agents by delegating fine-grained retrieval to ragpipe.
 
 ```python
 
@@ -121,12 +112,12 @@ def rag():
     from ragpipe.config import load_config
     config = load_config('examples/<project>/config.yml', show=True) #see examples/*/*.yml
 
-    D = build_data_model(config) #D.query_text is the query, D.docs.<> contain documents
+    query_text = config.queries[0] #user-provided query
+    D = build_data_model(config) # D.docs.<> contain documents
 
-    from ragpipe.bridge import bridge_query_doc
-    docs_retrieved = bridge_query_doc(D.query_text, D, config)
+    from ragpipe import Retriever
+    docs_retrieved = Retriever(config).eval(query_text, D)
     for doc in docs_retrieved: doc.show()
-
 
     from ragpipe.llms import respond_to_contextual_query as respond
     result = respond(query_text, docs_retrieved, config.prompts['qa'], config.llm_models['default']) 
@@ -135,7 +126,21 @@ def rag():
     print('\nGenerated answer: ', result)
 ```
 
+## Tests
 
+```bash
+pytest examples/test_all.py
+```
+
+## Key Ideas
+
+**Representations**. Choose the query/document fields as well as how to represent each chosen query / document field to aid similarity/relevance computation (*bridges*) over the entire document repository. Representations can be text strings, dense/sparse vector embeddings or arbitrary data objects, and help *bridge* the gap between the query and the documents.
+
+**Bridges**. Choose a *pair* of query and document representation to *bridge*. A bridge serves as a relevance indicator: one of the several criteria for identifying the relevant documents for a query. In practice, several bridges together determine the degree to which a document is relevant to a query. A bridge is a ranker and top-k selector, rolled into one. Computing each bridge creates a unique ranked list of documents with respect to the relevance criteria.
+
+**Merges**. Specify how to combine the bridges, e.g., combine multiple ranked list of documents into a single ranked list using rank fusion.
+
+**Data Model**. A hierarchical data structure that consists of all the (nested) documents. The data model is created from the original document files and is retained over the entire pipeline. We compute representations for arbitrary nested fields of the data, without flattening the data tree.
 
 ## Key Dependencies
 
@@ -152,7 +157,7 @@ Ragpipe relies on
 
 Ragpipe is open-source and under active development. We welcome contributions:
 - Try out ragpipe on queries over your data. Open an issue or send a pull request.
-- Join us as an early contributor to build a new, powerful RAG framework.
+- Join us as an early contributor to build a new, powerful and flexible RAG framework.
 - Stuck on a RAG problem without progress? Share with us, iterate and overcome blockers.
 
 

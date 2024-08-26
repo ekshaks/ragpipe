@@ -24,6 +24,7 @@ from importlib import import_module
 
 def load_func(dotpath : str):
     """ load function in module.  function is right-most segment """
+    #sys.path.append('/path/to/module/')
     module_, func = dotpath.rsplit(".", maxsplit=1)
     m = import_module(module_)
     return getattr(m, func)
@@ -99,6 +100,23 @@ def get_fpath_items(fpath, D):
 
     printd(3, f'get_fpath_items = {type(items)}, {len(items)}')
     return DotDict(els=items, paths=item_paths)
+
+def tfm_docpath(path, tfm):
+    # sections[].header -- ..,.text --> sections[].text
+    #TODO: only handles '..' now. generalize.
+    parts = tfm.split(',')
+    opath = path
+    for p in parts:
+        match p:
+            case '..':
+                pparts = opath.split('.') #sections[], header
+                if len(pparts) > 1:
+                    opath = '.'.join(pparts[:-1])
+                else:
+                    raise ValueError('Invalid op: {p} on {opath} ')
+            case _:
+                opath = opath + p
+    return opath
 
 def get_collection_name(fpath, repname):
     return 'C_' + fpath.replace('[]', '-').replace('.', '_') + f'_{repname}' + '_C'
