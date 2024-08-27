@@ -108,6 +108,7 @@ class MergeConfig(BaseModel):
 
 
 class RPConfig(BaseModel):
+    config_fname: str 
     prompts: Optional[Dict[str, str]] = {} #name to prompt
     encoders: Optional[Dict[str, EncoderConfig]] = {}
     dbs: Optional[Dict[str, DBConfig]] = {}
@@ -178,6 +179,7 @@ def load_config(fname, overrides_fname='overrides.yaml', show=False):
     import yaml
     with open(fname, 'r') as file:
         configd = yaml.load(file, Loader=yaml.FullLoader)
+        configd['config_fname'] = fname
 
     opath = Path(fname).parent / overrides_fname
     if opath.exists():

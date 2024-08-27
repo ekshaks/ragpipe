@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 from typing import Optional, List
 from .config import BridgeConfig, RepConfig, RPConfig
-from .common import printd, load_func, DEFAULT_LIMIT, DotDict
+from .common import printd, load_func, DEFAULT_LIMIT, DotDict, has_field
 from .docnode import ScoreNode
 
 
@@ -15,9 +15,9 @@ class RepManager:
     
     '''
 
-    def __init__(self, representations, dbs):
-        self.name2repconfig = representations
-        self.dbs = dbs
+    def __init__(self, config: RPConfig):
+        self.name2repconfig = config.representations
+        self.dbs = config.dbs
         self.reps = {}
     
     def hash_field_repname(self, fpath, repname):
@@ -32,7 +32,7 @@ class RepManager:
                             rep_props=config, repname=repname, is_query=is_query)
         return rep
    
-    def get_or_create(self, repkey, D):
+    def get_or_create_rep(self, repkey, D):
         printd(1, f'computing reps for {repkey}...')
         if repkey not in self.reps:
             fpath, repname = self.decomp_field_repname(repkey)
@@ -47,6 +47,16 @@ class RepManager:
         
         return self.reps[repkey]
 
+
+RMPool = {} #config_fname -> RepManager (move to RepManager.from_config ?)
+
+def get_or_create_rep_manager(config: RPConfig):
+    config_fname = config.config_fname
+    RM = RMPool.get(config_fname, None)
+    if RM is None:
+        RM = RepManager(config)
+        RMPool[config_fname] = RM
+    return RM
 
 
 class Bridge:
@@ -64,21 +74,26 @@ class Bridge:
       enabled: false
     '''
 
-    def __init__(self, bridge_name, bridge_config: BridgeConfig, RM: RepManager):
+    def __init__(self, bridge_name, config: RPConfig, RM: RepManager = None):
         self.name = bridge_name
-        self.config=bridge_config
-        self.RM = RM
+        self._config = config
+        self.bconfig= config.bridges[bridge_name]
+        if RM is None: self.RM = get_or_create_rep_manager(config)
+        else: self.RM = RM
 
-    def eval(self, D, **kwargs):
-        print(f'Eval Bridge({self.name}): {self.config}')
-        repnodes = self.config.repnodes
+    def eval(self, query_text, D, **kwargs):
+        print(f'Eval Bridge({self.name}): {self.bconfig}')
+        if not has_field(D, 'query'):
+            D.query = DotDict(text=query_text)
+
+        repnodes = self.bconfig.repnodes
         assert isinstance(repnodes, list) and len(repnodes) == 2, f'{repnodes}'
-        limit = self.config.limit or DEFAULT_LIMIT
+        limit = self.bconfig.limit or DEFAULT_LIMIT
         
         # create reps
-        reps = [self.RM.get_or_create(repkey, D) for repkey in repnodes]
+        reps = [self.RM.get_or_create_rep(repkey, D) for repkey in repnodes]
 
-        matchfn_key = self.config.matchfn
+        matchfn_key = self.bconfig.matchfn
         if matchfn_key is not None:
             matchfn = load_func(matchfn_key)
             docs: List[ScoreNode] = matchfn(*reps)
@@ -88,7 +103,7 @@ class Bridge:
             query_index, doc_index = reps
             docs: List[ScoreNode] = retriever_router(doc_index, D.query.text, query_index, limit=limit)
         
-        evalfn_key = self.config.evalfn
+        evalfn_key = self.bconfig.evalfn
         if evalfn_key is not None:
             evalfn = load_func(evalfn_key)
             evalfn(docs, D, query_id=kwargs.get('query_id', None))
@@ -100,7 +115,7 @@ class Retriever:
 
     def __init__(self, rp_config: RPConfig):
         self.config = rp_config
-        self.RM = RepManager(rp_config.representations, rp_config.dbs)
+        self.RM = get_or_create_rep_manager(rp_config)
     
     def eval_score_expr(self, expr, bridge2docs, merge=None):
         #TODO: generalize! 
@@ -110,9 +125,8 @@ class Retriever:
     def eval(self, query_text, D, merge:str = None, query_id:int = None):
         #printd(1, f'\n=== Fusing Results, Ranking ... merges = {selected_merges}\n')
 
-        Q = DotDict(text=query_text)
-        D.query = Q
-        C = self.config
+        D.query = DotDict(text=query_text)
+        C: RPConfig = self.config
 
         if merge is None:
             if C.enabled_merges:
@@ -129,7 +143,7 @@ class Retriever:
         bridge2results = {}
         for b in mp.bridges:
             bconfig = C.bridges[b]
-            docs = Bridge(b, bconfig, self.RM).eval(D, query_id=query_id)
+            docs = Bridge(b, C, RM=self.RM).eval(query_text, D, query_id=query_id)
             bridge2results[b] = docs
 
         match mp.method:
@@ -145,10 +159,3 @@ class Retriever:
         
         return doc_with_scores
 
-
-def test():
-    results = Retriever(config).eval(query_text, D)
-
-
-if __name__ == '__main__':
-    test()

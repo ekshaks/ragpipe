@@ -20,6 +20,12 @@ def printd(N, text):
     if N >=3: return
     print(text)
 
+def has_field(obj, field):
+    if isinstance(obj, dict):
+        return field in obj
+    else:
+        return hasattr(obj, field)
+
 from importlib import import_module
 
 def load_func(dotpath : str):
