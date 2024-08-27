@@ -25,21 +25,21 @@ class RepManager:
     def decomp_field_repname(self, repkey):
         return repkey.split('#')
     
-    def create_rep(self, D, fpath, repname, config: RepConfig):
+    def create_rep(self, D, fpath, repname, config: RepConfig, doc_pre_filter=[]):
         from .rag_components import compute_rep
         is_query = fpath.startswith('qu') #hack! need a flag
         rep = compute_rep(fpath, D, self.dbs, 
-                            rep_props=config, repname=repname, is_query=is_query)
+                            rep_props=config, repname=repname, is_query=is_query, doc_pre_filter=doc_pre_filter)
         return rep
    
-    def get_or_create_rep(self, repkey, D):
+    def get_or_create_rep(self, repkey, D, doc_pre_filter=[]):
         printd(1, f'computing reps for {repkey}...')
         if repkey not in self.reps:
             fpath, repname = self.decomp_field_repname(repkey)
             n2r = self.name2repconfig
             try:
                 repconfig = n2r[fpath][repname]
-                rep = self.create_rep(D, fpath, repname, repconfig)
+                rep = self.create_rep(D, fpath, repname, repconfig, doc_pre_filter=doc_pre_filter)
                 self.reps[repkey] = rep
             except Exception as e:
                 print(f'Unable to resolve repkey {repkey}. Did you define rep config for {repkey} correctly?')
@@ -59,7 +59,7 @@ def get_or_create_rep_manager(config: RPConfig):
     return RM
 
 
-class Bridge:
+class BridgeRetriever:
 
     '''
     repnodes: List[str] #sparse2, .paras[].text#sparse2
@@ -77,11 +77,11 @@ class Bridge:
     def __init__(self, bridge_name, config: RPConfig, RM: RepManager = None):
         self.name = bridge_name
         self._config = config
-        self.bconfig= config.bridges[bridge_name]
+        self.bconfig = config.bridges[bridge_name]
         if RM is None: self.RM = get_or_create_rep_manager(config)
         else: self.RM = RM
 
-    def eval(self, query_text, D, **kwargs):
+    def eval(self, query_text, D, doc_pre_filter: List[ScoreNode]=[], **kwargs):
         print(f'Eval Bridge({self.name}): {self.bconfig}')
         if not has_field(D, 'query'):
             D.query = DotDict(text=query_text)
@@ -91,7 +91,8 @@ class Bridge:
         limit = self.bconfig.limit or DEFAULT_LIMIT
         
         # create reps
-        reps = [self.RM.get_or_create_rep(repkey, D) for repkey in repnodes]
+        reps = [self.RM.get_or_create_rep(repkey, D, doc_pre_filter=doc_pre_filter) 
+                for repkey in repnodes]
 
         matchfn_key = self.bconfig.matchfn
         if matchfn_key is not None:
@@ -117,12 +118,20 @@ class Retriever:
         self.config = rp_config
         self.RM = get_or_create_rep_manager(rp_config)
     
-    def eval_score_expr(self, expr, bridge2docs, merge=None):
-        #TODO: generalize! 
+    def merge_by_expr(self, expr, bridge2docs, merge=None):
+        #move to fusion.py?
+        import sympy as sp
+        e = sp.sympify(expr)
+        bs = list(map(str, e.free_symbols))
         #use expr to gen new scores for each doc common across all bridge_names. sort.
-        return bridge2docs[expr]
+        if len(bs) == 1:
+            return bridge2docs[bs[0]]
+        else:
+            raise NotImplementedError(f'TODO: merge multiple result lists using expressions. bridges = {bs}') 
     
-    def eval(self, query_text, D, merge:str = None, query_id:int = None):
+    def eval(self, query_text, D, 
+             merge:str = None, query_id:int = None, 
+             doc_pre_filter: List[ScoreNode]=[]):
         #printd(1, f'\n=== Fusing Results, Ranking ... merges = {selected_merges}\n')
 
         D.query = DotDict(text=query_text)
@@ -142,8 +151,8 @@ class Retriever:
         #    if merge_name not in selected_merges: continue
         bridge2results = {}
         for b in mp.bridges:
-            bconfig = C.bridges[b]
-            docs = Bridge(b, C, RM=self.RM).eval(query_text, D, query_id=query_id)
+            br = BridgeRetriever(b, C, RM=self.RM)
+            docs = br.eval(query_text, D, query_id=query_id, doc_pre_filter=doc_pre_filter)
             bridge2results[b] = docs
 
         match mp.method:
@@ -151,7 +160,7 @@ class Retriever:
                 from .fusion import reciprocal_rank_fusion
                 doc_with_scores = reciprocal_rank_fusion(bridge2results)[:mp.limit]
             case 'expr':
-                doc_with_scores = self.eval_score_expr(mp.expr, bridge2results)[:mp.limit]
+                doc_with_scores = self.merge_by_expr(mp.expr, bridge2results)[:mp.limit]
             case _:
                 raise NotImplementedError(f'Unknown merge method : {mp.method}\nmerge_config: {mp}')
         

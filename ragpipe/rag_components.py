@@ -48,7 +48,7 @@ def encode_and_index(items, ic: IndexConfig, is_query=False):
     return reps_index
 
 
-def compute_rep(fpath, D, dbs, rep_props=None, repname=None, is_query=False) -> 'Index':
+def compute_rep(fpath, D, dbs, rep_props=None, repname=None, is_query=False, doc_pre_filter=[]) -> 'Index':
     from .encoders import get_encoder_reptype
 
     #fpath = .sections[].text repname = dense
@@ -69,7 +69,8 @@ def compute_rep(fpath, D, dbs, rep_props=None, repname=None, is_query=False) -> 
          )
     
     print(fpath, repname, f': storage={storage_config}, encoder={encoder_config}')
-    items_path_pairs = get_fpath_items(fpath, D)
+    dpfilter = set([d.doc_path for d in doc_pre_filter])
+    items_path_pairs = get_fpath_items(fpath, D, docpath_pre_filter=dpfilter)
     items, item_paths = items_path_pairs.els, items_path_pairs.paths
 
     index_config = IndexConfig.from_kwargs(encoder_config, storage_config, fpath, repname, item_paths) 

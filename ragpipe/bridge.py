@@ -1,3 +1,5 @@
+''' REMOVE!
+
 from typing import List
 from pathlib import Path
 import os
@@ -156,7 +158,6 @@ def merge_results(bridge2docs, merge_config, selected_merges=[]):
     
     return doc_with_scores
 
-
 def bridge_query_doc(query_text, D, config):
     Q = DotDict(text=query_text)
     D.query = Q
@@ -169,3 +170,4 @@ def bridge_query_doc(query_text, D, config):
     for d in doc_with_scores: d.load_docs(D)
     
     return doc_with_scores
+'''

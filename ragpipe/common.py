@@ -77,11 +77,13 @@ def compile_jq(expression, data):
                                     traverse(item, path[1:]), pos
                                 ) 
                                for pos, item in enumerate(obj)]
-                return item_path_pairs
+                res = item_path_pairs
             else:
                 key = int(key) 
                 obj_ = obj[key]
-                return prepend_path(traverse(obj_, path[1:]), key)
+                res = prepend_path(traverse(obj_, path[1:]), key)
+            #TODO:  add filter here
+            return res
         else:
             return obj
 
@@ -99,8 +101,11 @@ def compile_jq(expression, data):
     return ret
 
 
-def get_fpath_items(fpath, D):
+def get_fpath_items(fpath, D, docpath_pre_filter=set()):
     item_path_pairs = compile_jq(fpath, D)
+    if len(docpath_pre_filter) != 0:
+        item_path_pairs = [(item, item_path) for item, item_path in item_path_pairs 
+                       if item_path in docpath_pre_filter]
     #print(items[:5])
     items, item_paths = [list(tupleObj) for tupleObj in zip(*item_path_pairs)]
 
