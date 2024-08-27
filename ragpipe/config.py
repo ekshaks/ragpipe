@@ -33,14 +33,14 @@ class EncoderConfig(BaseModel, frozen=True):
     name: str
     prompt: Optional[str] = None
     query_instruction: Optional[str] = None
-    
+
     with_index: bool = False
     module: Optional[str] = None #external module
 
     #TODO refactor below into EncoderShapeConfig
     dtype: Optional[str] = ''
     size: Optional[int] = None
-    shape: Optional[EncoderShapeConfig] = None
+    shape: Optional[EncoderShapeConfig] = None #Dict[str, EncoderShapeConfig] (allow multiple size, dtype)
 
 
 class DBConfig(BaseModel, frozen=True):

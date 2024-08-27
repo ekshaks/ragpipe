@@ -1,4 +1,9 @@
-from sentence_transformers import SentenceTransformer
+try:
+    from sentence_transformers import SentenceTransformer
+except Exception as e:
+    print('To use mxbai-large(binary, float): please `pip install sentence-transformers`')
+    raise e
+
 from sentence_transformers.util import cos_sim
 from sentence_transformers.quantization import quantize_embeddings
 from ragpipe.encoders import Encoder
@@ -11,9 +16,9 @@ class MXLarge(Encoder):
         model = self.get_model()
         embeddings = model.encode(docs, normalize_embeddings=True)
         #printd(3, f'mxlarge encode: {embeddings.shape}') (B, 512)
-        
-        if self.config.shape.dtype == 'ubinary':
-            out_embeddings = quantize_embeddings(embeddings, precision=self.config.shape.dtype) #(B, 64)
+        dtype = self.config.shape.dtype
+        if dtype == 'ubinary':
+            out_embeddings = quantize_embeddings(embeddings, precision=dtype) #(B, 512) f32 -> (B, 64) uint8
         else:
             out_embeddings = embeddings
         #printd(3, f'mxlarge encode (ubinary): {out_embeddings.shape}')
@@ -31,8 +36,8 @@ class MXLarge(Encoder):
         from sentence_transformers.util import cos_sim
 
         def sim(doc_embeddings=None, query_embedding=None):
-            
-            if self.config.shape.dtype == 'ubinary':
+            dtype = self.config.shape.dtype
+            if  dtype == 'ubinary':
                 #unpack, then cos_sim. TODO: improve
                 query_embedding = np.unpackbits(query_embedding, axis=-1).astype("int")*1.0 #(B, 512)
                 doc_embeddings = [np.unpackbits(d, axis=-1).astype("int")*1.0 for d in doc_embeddings]
@@ -51,7 +56,7 @@ class MXLarge(Encoder):
             #print('mxbai sim2: hamm dist ', hamming_distance.shape, hamming_distance)
             return -hamming_distance + np.max(hamming_distance)
 
-        return sim
+        return sim2
 
     @classmethod
     def from_config(cls, config):
