@@ -4,7 +4,7 @@ from tqdm import tqdm
 
 from fastembed import SparseTextEmbedding, TextEmbedding
 
-from .common import DotDict, printd
+from .common import DotDict, printd, load_func
 from .docnode import DocNode
 from .ops import np_to_torch, qD_sparse_similarity
 from .colbert import Colbert
@@ -188,13 +188,12 @@ def get_encoder(econfig, **kwargs):
         case pth if 'passthrough' in pth:
             encoder = PassThroughEncoder.from_config(econfig)
         case _:
-            printd(1, f'Encoder undefined: {econfig.name}. Assuming nop encoder (passthrough).')
-            #TODO: expect 'encoder_module': Passthrough, else ValueError
-            encoder = PassThroughEncoder.from_config(econfig)
-            # if 'none_ok' in kwargs:
-            #     return None
-            # else:
-            #     raise ValueError(f'Not handled encoder : {econfig}')
+            if econfig.module is not None:
+                encoder = load_func(econfig.module).from_config(econfig)
+            else:
+                printd(1, f'Encoder undefined: {econfig}. Assuming nop encoder (passthrough).')
+                #TODO: expect 'encoder_module': Passthrough, else ValueError
+                encoder = PassThroughEncoder.from_config(econfig)
     
     EncoderPool[econfig] = encoder 
     return encoder

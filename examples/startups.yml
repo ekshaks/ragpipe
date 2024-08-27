@@ -35,19 +35,32 @@ encoders:
     name: sentence-transformers/all-MiniLM-L6-v2
   colbert:
     name: colbert-ir/colbertv2.0 
+  mxlargebin:
+    name: mxlarge
+    query_instruction: "Represent this sentence for searching relevant passages: "
+    module: ext.libs.mxbai.MXLarge
+    shape:
+        size: 512
+        dtype: 'ubinary'
 
 representations:
     query.text:
         dense: {encoder: bge_small} 
         sparse: {encoder: splade}
+        densebin: {encoder: mxlargebin}
 
     .documents[].description:
         dense: {encoder: bge_small, store: qdrant}
         sparse: {encoder: splade}
+        densebin: {encoder: mxlargebin}
+
 
 bridges:
   b_dense:
       repnodes: query.text#dense, .documents[].description#dense
+      limit: 10
+  b_densebin:
+      repnodes: query.text#densebin, .documents[].description#densebin
       limit: 10
   b_sparse:
      repnodes: query.text#sparse, .documents[].description#sparse
@@ -62,8 +75,11 @@ merges:
     method: reciprocal_rank
     bridges: b_dense, b_sparse
     limit: 10
+  c3:
+    expr: b_densebin
+    limit: 10
 
-enabled_merges: c2
+enabled_merges: c3
 
 llm_models:
   __default__: groq/llama3-70b-8192

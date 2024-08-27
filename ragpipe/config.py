@@ -33,6 +33,7 @@ class EncoderConfig(BaseModel, frozen=True):
     name: str
     prompt: Optional[str] = None
     query_instruction: Optional[str] = None
+    
     with_index: bool = False
     module: Optional[str] = None #external module
 

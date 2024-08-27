@@ -4,6 +4,12 @@ from typing import List
 from fastembed import SparseEmbedding
 from .common import printd
 
+#TODO!
+'''
+def qD_binary_similarity(doc_embeddings, query_embedding):
+    # compute hamming distance
+    pass
+'''
 
 def qD_cosine_similarity(doc_embeddings: 'list(d,)'=None, query_embedding: '(d,)'=None):
     import torch.nn.functional as F
@@ -25,7 +31,9 @@ def exact_nn(doc_embeddings, doc_paths, rep_query, similarity_fn=None, limit=Non
     '''
     if similarity_fn is None:
         similarity_fn = qD_cosine_similarity
-    printd(3, f'exact_nn shapes: doc = {doc_embeddings[0].size()}, query = {rep_query.size()}')
+    #printd(3, doc_embeddings)
+    #printd(3, rep_query)
+    #printd(3, f'exact_nn shapes: doc = {doc_embeddings[0].size()}, query = {rep_query.size()}')
     scores = similarity_fn(doc_embeddings=doc_embeddings, query_embedding=rep_query)
     printd(3, f'exact_nn: scores = {scores}')
     results = [dict(doc_path=doc_path, score=score) for doc_path, score in zip(doc_paths, scores)]
