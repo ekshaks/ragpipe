@@ -14,13 +14,10 @@ class MXLarge(Encoder):
         
         if self.config.shape.dtype == 'ubinary':
             out_embeddings = quantize_embeddings(embeddings, precision=self.config.shape.dtype) #(B, 64)
-            out_embeddings = np.unpackbits(out_embeddings, axis=-1).astype("int") #(B, 512)
         else:
             out_embeddings = embeddings
         #printd(3, f'mxlarge encode (ubinary): {out_embeddings.shape}')
-        #printd(3, f'mxlarge encode (ubinary) unpacked: {out_embeddings.shape}')
-        #print(out_embeddings)
-        return out_embeddings*1.0 #turn Long to Float
+        return out_embeddings
     
     def encode_parallel(self, docs, is_query=False):
         model = self.get_model()
@@ -32,10 +29,28 @@ class MXLarge(Encoder):
     def get_similarity_fn(self):
         #printd(3, f'get_similarity_fn: {self.name}')
         from sentence_transformers.util import cos_sim
+
         def sim(doc_embeddings=None, query_embedding=None):
+            
+            if self.config.shape.dtype == 'ubinary':
+                #unpack, then cos_sim. TODO: improve
+                query_embedding = np.unpackbits(query_embedding, axis=-1).astype("int")*1.0 #(B, 512)
+                doc_embeddings = [np.unpackbits(d, axis=-1).astype("int")*1.0 for d in doc_embeddings]
+
             res = cos_sim(query_embedding, doc_embeddings).squeeze()
             #printd(4, 'mxbai: get sim: ', res.shape, res)
             return res
+        
+        def sim2(doc_embeddings=None, query_embedding=None):
+            assert self.config.shape.dtype == 'ubinary', 'sim2 only applied to binary-quantized vectors'
+            
+            #hamming distance on compressed rep
+            xor_result = np.bitwise_xor(doc_embeddings, query_embedding)
+            #print('mxbai sim2 xor result: ', xor_result.shape)
+            hamming_distance = np.unpackbits(xor_result, axis=-1).astype(int).sum(axis=-1)
+            #print('mxbai sim2: hamm dist ', hamming_distance.shape, hamming_distance)
+            return -hamming_distance + np.max(hamming_distance)
+
         return sim
 
     @classmethod
