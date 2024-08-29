@@ -1,0 +1,77 @@
+prompts:
+  qa1: |
+    The following are snippets from a policy document in markdown format.
+    # documents
+
+    {documents}
+
+    Answer the following query based on the above document snippets.
+
+    {query}
+    Answer:
+
+dbs:
+  chroma:
+    path: /tmp/ragpipe/chroma/
+    name: chromadb
+  qdrant:
+    path: /tmp/ragpipe/qdrant/
+    name: qdrantdb
+    options:
+      vector: {distance: 'cosine'}
+      optimizers: {memmap_threshold: 20000}
+      hnsw: {on_disk: true}
+
+encoders:
+  bge_small:
+    name: BAAI/bge-small-en-v1.5
+    query_instruction: "Represent this sentence for searching relevant passages:"
+  bm25:
+    name: bm25
+  colbert:
+    name: colbert-ir/colbertv2.0 
+  mxlargebin:
+    name: mxlargebin
+    query_instruction: "Represent this sentence for searching relevant passages: "
+    module: ext.libs.mxbai.MXLarge
+    shape: {size: 512, dtype: 'ubinary'}
+
+representations:
+    query.text:
+        dense: {encoder: bge_small}
+        sparse: {encoder: bm25}
+
+    .documents[].description:
+        dense: {encoder: bge_small}
+        sparse: {encoder: bm25}
+
+
+bridges:
+  b_dense:
+      repnodes: query.text#dense, .documents[].description#dense
+      limit: 10
+
+
+merges:
+  c1:
+    expr: b_dense
+    limit: 10
+  c2:
+    method: reciprocal_rank
+    bridges: b_dense, b_sparse
+    limit: 10
+
+
+enabled_merges: c2
+
+llm_models:
+  __default__: groq/llama3-70b-8192
+
+etc:
+  data_folder: ./data
+  
+queries:
+  - query 1
+  - query 2
+  - query 3
+

@@ -1,4 +1,4 @@
-topic-split: |
+topic_split: |
   Next, I will present you with a lengthy section of "timestamped text," sourced from a video segment. You are required to analyze and summarize the content, "in chronological order," breaking it down into different thematic topics. Then, under each thematic topic, place the corresponding "start and end times" of the timestamps, for example:
   ```
   # Topic 1
@@ -15,6 +15,7 @@ topic-split: |
   ```
   Please directly output the processed result, without any additional analysis:
 
-identify-paras: | #todo: structure the output
+identify_paras: | #todo: structure the output
   The following is an article in markdown format where paragraphs are split down to individual sentences. Identify the paragraph boundaries so that each paragraph contains related content.
 
+extract_relevant: Extract all relevant information from the chunks processed so far to answer the original query.

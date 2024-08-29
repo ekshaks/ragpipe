@@ -26,6 +26,7 @@ def encode_and_index(items, ic: IndexConfig, is_query=False):
         match encoder_name:
             case 'bm25':
                 from ext.libs.bm25 import RankBM25Index
+                print('>>>> **building BM25 Index**')
                 reps_index = RankBM25Index(items, item_paths)
             case _:
                 if ec.module is not None:

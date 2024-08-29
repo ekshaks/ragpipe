@@ -80,6 +80,7 @@ def compile_jq(expression, data):
                 res = item_path_pairs
             else:
                 key = int(key) 
+                if key >= len(obj): raise KeyError(f'position {key} not found. (len(obj)={len(obj)}) (path = {path})')
                 obj_ = obj[key]
                 res = prepend_path(traverse(obj_, path[1:]), key)
             #TODO:  add filter here
@@ -112,7 +113,7 @@ def get_fpath_items(fpath, D, docpath_pre_filter=set()):
     printd(3, f'get_fpath_items = {type(items)}, {len(items)}')
     return DotDict(els=items, paths=item_paths)
 
-def tfm_docpath(path, tfm):
+def tfm_docpath(path: 'docpath', tfm: str):
     # sections[].header -- ..,.text --> sections[].text
     #TODO: only handles '..' now. generalize.
     parts = tfm.split(',')

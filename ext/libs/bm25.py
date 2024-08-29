@@ -49,7 +49,7 @@ class RankBM25Index:
             tokenized_query = query
         scores = self.bm25.get_scores(tokenized_query)
         top_n = np.argsort(scores)[::-1][:limit]
-        node_scores = [ScoreNode(li_node=self.doc_list[i], score=scores[i], doc_path_index=i) 
+        node_scores = [ScoreNode(li_node=self.doc_list[i], score=scores[i], doc_path=self.doc_paths[i]) #doc_path_index=i) 
                        for i in top_n]
         nodes_scores_sorted = sorted(node_scores, key=lambda x: x.score or 0.0, reverse=True)
         return nodes_scores_sorted[: limit]

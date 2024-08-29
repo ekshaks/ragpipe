@@ -188,7 +188,7 @@ def get_encoder(econfig, **kwargs):
         case pth if 'passthrough' in pth:
             encoder = PassThroughEncoder.from_config(econfig)
         case _:
-            if econfig.module is not None:
+            if not econfig.with_index and econfig.module is not None:
                 encoder = load_func(econfig.module).from_config(econfig)
             else:
                 printd(1, f'Encoder undefined: {econfig}. Assuming nop encoder (passthrough).')

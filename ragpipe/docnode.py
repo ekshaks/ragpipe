@@ -36,6 +36,15 @@ class DocNode(BaseModel):
         else:
             return self.li_node
     
+    def tfm_docpath(self, path, D, reload=True):
+        from .common import tfm_docpath as tfm
+        self.doc_path = tfm(self.doc_path, path)
+        self.is_ref = True
+        #print(self.doc_path)
+        if reload: 
+            self.load_docs(D)
+            self.is_ref = False
+
     def load_docs(self, D):
         if not self.is_ref: 
             printd(3, 'DocNode:load_docs -- already loaded docs')
@@ -52,13 +61,16 @@ class DocNode(BaseModel):
 
 class ScoreNode(DocNode):
     score: float = None
-    def show(self):
+    def show(self, truncate_at=None):
         assert not self.is_ref, 'Load doc before display'
         if isinstance(self.li_node, str):  #, f'li_node has type {type(self.li_node)}'
             values = ''
             if self.bridge2rank is not None:
                 #values = '[' + ','.join(map(str,self.bridge2rank.values())) + ']'
                 values = '[' + ','.join([f'{b}:{rank}' for b, rank in self.bridge2rank.items()]) + ']'
-            print(f' 👉 {self.score:.3f} {values} ({self.doc_path}) 👉 ', self.li_node)
+            text = self.li_node[:truncate_at]
+            print(f' 👉 {self.score:.3f} {values} ({self.doc_path}) 👉 ', text)
         else:
-            print(' 👉 ', self.score, self.li_node.get_content()[:400], '\n\n')
+            truncate_at = truncate_at or 400
+            self.li_node.get_content()[:truncate_at]
+            print(' 👉 ', self.score, text, '\n\n')

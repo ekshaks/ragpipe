@@ -20,7 +20,7 @@ class BMXIndex(BaseIndex):
 
     def retrieve(self, rep_query, limit=DEFAULT_LIMIT):
         results = self.idx.search(rep_query) #already sorted
-        print('BMXIndex results: ', results)
+        #print('BMXIndex results: ', results)
         keys, scores = results.keys[:limit], results.scores[:limit]
         docnodes = [ScoreNode(doc_path=key, score=score, is_ref=True) for key, score in zip(keys, scores)]
         return docnodes
