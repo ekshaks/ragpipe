@@ -72,5 +72,5 @@ class ScoreNode(DocNode):
             print(f' 👉 {self.score:.3f} {values} ({self.doc_path}) 👉 ', text)
         else:
             truncate_at = truncate_at or 400
-            self.li_node.get_content()[:truncate_at]
+            text = self.li_node.get_content()[:truncate_at]
             print(' 👉 ', self.score, text, '\n\n')
