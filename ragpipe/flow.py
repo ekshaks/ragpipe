@@ -82,7 +82,7 @@ class BridgeRetriever:
         else: self.RM = RM
 
     def eval(self, query_text, D, doc_pre_filter: List[ScoreNode]=[], **kwargs):
-        print(f'Eval Bridge({self.name}): {self.bconfig}')
+        printd(2, f'Start eval Bridge({self.name}): {self.bconfig}')
         if not has_field(D, 'query'):
             D.query = DotDict(text=query_text)
 
@@ -94,6 +94,7 @@ class BridgeRetriever:
         reps = [self.RM.get_or_create_rep(repkey, D, doc_pre_filter=doc_pre_filter) 
                 for repkey in repnodes]
 
+        printd(2, f'Retrieving docs for Bridge {self.name}...')
         matchfn_key = self.bconfig.matchfn
         if matchfn_key is not None:
             matchfn = load_func(matchfn_key)
@@ -144,16 +145,15 @@ class Retriever:
                 values = list(C.merges.values())
                 if values: merge = values[0] 
                 else: raise ValueError(f'No merge specified.')
-        
+
         mp = C.merges[merge]  
-        print(f'Computing merge {merge}...')   
-        #for merge_name, merge_config in C.merges.items():
-        #    if merge_name not in selected_merges: continue
         bridge2results = {}
         for b in mp.bridges:
             br = BridgeRetriever(b, C, RM=self.RM)
             docs = br.eval(query_text, D, query_id=query_id, doc_pre_filter=doc_pre_filter)
             bridge2results[b] = docs
+
+        print(f'Computing merge {merge}...')   
 
         match mp.method:
             case 'reciprocal_rank':
@@ -164,7 +164,7 @@ class Retriever:
             case _:
                 raise NotImplementedError(f'Unknown merge method : {mp.method}\nmerge_config: {mp}')
         
-        for d in doc_with_scores: d.load_docs(D)
+        doc_with_scores = [d for d in doc_with_scores if d.load_docs(D)]
         
         return doc_with_scores
 

@@ -1,13 +1,17 @@
+# This is a quickstart config example to get you started. 
+# Edit the representations, bridges, merges, queries, etc. to customize.
+
 prompts:
   qa1: |
-    The following are snippets from a policy document in markdown format.
+    The following are snippets from a document in markdown format.
     # documents
 
-    {documents}
+    {{documents}}
 
-    Answer the following query based on the above document snippets.
+    Answer the following query based on the above document snippets. 
+    If the snippets cannot help answer the query, respond as <answer>Unknown</answer>
 
-    {query}
+    {{query}}
     Answer:
 
 dbs:

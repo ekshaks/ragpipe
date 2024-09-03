@@ -41,7 +41,7 @@ How do we resolve each sub-query?
 - **merge** the retrieved docs across bridges to setup a context,
 - present the query and context to a language model to compute the final response
 
-The `represent-bridge-merge` pattern is very powerful and allows us to build and iterate over all kinds of complex retrieval pipelines, including those based on the traditional `retrieve-rank-rerank` pattern and more recent advanced RAG patterns. Evals can be attached to `bridge` or `merge` nodes to verify intermediate results.
+The `represent-bridge-merge` pattern is very powerful and allows us to build and iterate over all kinds of complex retrieval pipelines, including those based on the traditional `retrieve-rank-rerank` pattern and more recent advanced RAG patterns. Evals can be attached to `bridge` or `merge` nodes to verify intermediate results. See examples below.
 
 
 ## Installation
@@ -66,6 +66,16 @@ pip install -r requirements.txt
 Note: For CUDA support on Windows/Linux you might need to install PyTorch with CUDA compiled.
 For instructions follow https://pytorch.org/get-started/locally/
 
+## Key Ideas
+
+**Representations**. Choose the query/document fields as well as how to represent each chosen query / document field to aid similarity/relevance computation (*bridges*) over the entire document repository. Representations can be text strings, dense/sparse vector embeddings or arbitrary data objects, and help *bridge* the gap between the query and the documents.
+
+**Bridges**. Choose a *pair* of query and document representation to *bridge*. A bridge serves as a relevance indicator: one of the several criteria for identifying the relevant documents for a query. In practice, several bridges together determine the degree to which a document is relevant to a query. A bridge is a ranker and top-k selector, rolled into one. Computing each bridge creates a unique ranked list of documents with respect to the relevance criteria.
+
+**Merges**. Specify how to combine the bridges in sequential or parallel pipelines, e.g., combine ranked list of documents, retrieved via multiple bridges, into a single ranked list using rank fusion.
+
+**Data Model**. A hierarchical data structure that consists of all the (nested) documents. The data model is created from the original document files and is retained over the entire pipeline. We compute representations for arbitrary nested fields of the data, without flattening the data tree.
+
 
 ## Querying with Ragpipe
 
@@ -73,20 +83,34 @@ To query over a data repository,
 
 1. Build a hierachical data model over your data repositories, e.g., `{"documents" : [{"text": ...}, ...]}`. 
 
-2. In `config.yml`:
+2. In the `project.yml` config file:
 
 - Specify which document fields will be represented and how.
 - Specify which representations to compute for the query.
 - Specify `bridges`: which pair of query and doc field representation should be matched to find relevant documents.
 - Specify `merges`: how to combine multiple bridges, sequentially or in parallel, to yield the final ranked list of relevant documents.
 
-
 3. Specify how to generate response to the query using the above ranked document list and a large language model.
 4. Iterate by making quick changes to (1), (2) or (3).
 
 ## Quick Start
 
-Examples are in the [examples](examples) directory.
+**Ragpipe CLI**. *(coming soon)*
+
+**Configure and Run Pipeline**. Configure the query pipeline by building the data model, specifying representations/encoders for document fields and bridges for matching and ranking.
+
+- Create two files `project.yml` (config file) and `project.py` (build data model) for your project.
+- Run `python project.py`
+- Quickstart templates are available here: [examples/quickstart/project.yml](project.yml), [examples/quickstart/project.py](project.py). Copy and modify as per your RAG pipeline and project structure.
+ 
+
+The default LLM is [Groq](https://groq.com/). Please set GROQ_API_KEY in `.env`. Alternatively, openai LLMs (set `OPENAI_API_KEY`) and ollama based local LLMs (`ollama/..` or `local/..`) are also supported.
+
+## Examples
+
+A notebook explaining how to setup a simple **end-to-end RAG pipeline** with `ragpipe` is [here](examples/quickstart/pg.ipynb).
+
+Several examples are in the [examples](examples) directory.
 
 For instance, run [`examples/insurance`](examples/insurance).
 ```
@@ -100,7 +124,6 @@ examples/insurance/
 python -m examples.insurance.insurance
 ```
 
-The default LLM is [Groq](https://groq.com/). Please set GROQ_API_KEY in `.env`. Alternatively, openai LLMs (set `OPENAI_API_KEY`) and ollama based local LLMs (`ollama/..` or `local/..`) are also supported.
 
 ## API Usage
 
@@ -132,15 +155,6 @@ def rag():
 pytest examples/test_all.py
 ```
 
-## Key Ideas
-
-**Representations**. Choose the query/document fields as well as how to represent each chosen query / document field to aid similarity/relevance computation (*bridges*) over the entire document repository. Representations can be text strings, dense/sparse vector embeddings or arbitrary data objects, and help *bridge* the gap between the query and the documents.
-
-**Bridges**. Choose a *pair* of query and document representation to *bridge*. A bridge serves as a relevance indicator: one of the several criteria for identifying the relevant documents for a query. In practice, several bridges together determine the degree to which a document is relevant to a query. A bridge is a ranker and top-k selector, rolled into one. Computing each bridge creates a unique ranked list of documents with respect to the relevance criteria.
-
-**Merges**. Specify how to combine the bridges, e.g., combine multiple ranked list of documents into a single ranked list using rank fusion.
-
-**Data Model**. A hierarchical data structure that consists of all the (nested) documents. The data model is created from the original document files and is retained over the entire pipeline. We compute representations for arbitrary nested fields of the data, without flattening the data tree.
 
 ## Key Dependencies
 

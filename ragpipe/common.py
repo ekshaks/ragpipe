@@ -135,12 +135,6 @@ def get_collection_name(fpath, repname):
 
 
 
-def generate_uuid_from_string(input_string, N=64):
-    import hashlib,uuid
-    # Create a SHA-256 hash of the input string
-    hash_object = hashlib.sha256(input_string.encode())
-    # Get the hexadecimal representation of the hash
-    hex_dig = hash_object.hexdigest()
-    # Use the first 32 characters (16 bytes) to create a UUID
-    uuid_generated = uuid.uuid4(hex_dig[:N])
-    return uuid_generated
+def generate_uuid_from_string(input_string):
+    import uuid
+    return str(uuid.uuid5(uuid.NAMESPACE_OID, input_string))

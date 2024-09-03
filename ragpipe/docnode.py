@@ -48,12 +48,17 @@ class DocNode(BaseModel):
     def load_docs(self, D):
         if not self.is_ref: 
             printd(3, 'DocNode:load_docs -- already loaded docs')
-            return #already loaded
-        else:
-            printd(3, f'loading docs...{self.doc_path}')
+            return True #already loaded
+        
+        printd(3, f'loading docs...{self.doc_path}')
         from .common import get_fpath_items
-        self.li_node = get_fpath_items(self.doc_path, D).els[0] #
-        self.is_ref = False
+        try:
+            self.li_node = get_fpath_items(self.doc_path, D).els[0] #
+            self.is_ref = False
+            return True
+        except Exception as e:
+            printd(2, f'load:docs -- cannot load {self.doc_path}. {e}')
+            return False
         #return self
 
 

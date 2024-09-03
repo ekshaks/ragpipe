@@ -116,7 +116,7 @@ class RPConfig(BaseModel):
     llm_models: Optional[Dict[str, str]] = {}
     representations: Dict[str,  Dict[str, RepConfig] ] #doc field -> repname -> repconfig 
     bridges: Dict[str, BridgeConfig]
-    merges: Dict[str, MergeConfig]
+    merges: Optional[Dict[str, MergeConfig]] = {}
     enabled_merges: Optional[List] = Field(default_factory=list)
     queries: Optional[List[str]] = []
     etc: Optional[Dict[str,Any]] = {}
@@ -138,16 +138,21 @@ class RPConfig(BaseModel):
             llm_models['__default__'] = 'groq/llama3-70b-8192'
 
         em = self.enabled_merges
-        #print('at least one merge: ', len(em))
-        if len(em) == 0: #empty list
+        if len(em) == 0: #no merge selected
             merges = self.merges
-            keys = list(merges.keys())
-            if len(merges) == 0: 
-                raise ValueError(f'Please specify at least one merge.')
-            if len(merges) == 1:
-                self.enabled_merges = keys
+            num_merges = len(merges)
+            if num_merges == 0: #create a default merge
+                first_bridge = list(self.bridges.keys())[0]
+                merge = MergeConfig(method='expr', expr=first_bridge, limit=20)
+                m1 = '_rp_m1_'
+                self.merges[m1] = merge
+                self.enabled_merges = [m1]
             else:
-                raise ValueError(f'Please select at least one of the merges (use "enabled_merges"): {keys}.')
+                keys = list(merges.keys())
+                if num_merges == 1: 
+                    self.enabled_merges = keys
+                else:
+                    raise ValueError(f'Please select at least one of the merges (use "enabled_merges"): {keys}.')
         
         #add inbuilt encoders to self.encoders
         if 'bm25' not in self.encoders:
@@ -176,13 +181,22 @@ def deep_update(source, overrides):
             source[key] = value
     return source
 
-def load_config(fname, overrides_fname='overrides.yaml', show=False):
+def load_config(source, is_file=True, overrides='overrides.yaml', show=False):
     import yaml
-    with open(fname, 'r') as file:
-        configd = yaml.load(file, Loader=yaml.FullLoader)
-        configd['config_fname'] = fname
+    if is_file:
+        with open(source, 'r') as file:
+            configd = yaml.load(file, Loader=yaml.FullLoader)
+            configd['config_fname'] = source
+    elif isinstance(source, str):
+        from .common import generate_uuid_from_string
+        configd = yaml.safe_load(source)
+        configd['config_fname'] = generate_uuid_from_string(source)
 
-    opath = Path(fname).parent / overrides_fname
+    else:
+        raise ValueError(f'Unknown config source: {source}')
+
+
+    opath = Path(source).parent / overrides
     if opath.exists():
         with open(opath, 'r') as file:
             overrides_configd = yaml.load(file, Loader=yaml.FullLoader)

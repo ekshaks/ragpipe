@@ -1,6 +1,9 @@
 from pathlib import Path
 from ragpipe.common import DotDict, printd
 
+# This is a quickstart ragpipe project to get you started. 
+# Edit the functions below to customize.
+
 class Workflow:
     # 
     def init(self, query_id=0):
@@ -28,16 +31,16 @@ class Workflow:
         return D
 
     def respond(self, query, docs_retrieved, prompt_templ, llm_model):
-        
-        from ragpipe.prompts import eval_template
-        docs_texts = '\n'.join([doc.get_text_content() for doc in docs_retrieved])
-        prompt = eval_template(prompt_templ, documents=docs_texts, query=query)
-        from ragpipe.llms import llm_router
-        resp = llm_router(prompt, model=llm_model)
-        # alternatively:
-        # from ragpipe.llms import respond_to_contextual_query
-        # resp = respond_to_contextual_query(query, docs_retrieved, prompt_templ, model=llm_model)
+        from ragpipe.llms import respond_to_contextual_query
+        resp = respond_to_contextual_query(query, docs_retrieved, prompt_templ, model=llm_model)
         return resp
+    
+        # Alternatively, create the prompt manually and call an LLM
+        # from ragpipe.prompts import eval_template
+        # docs_texts = '\n'.join([doc.get_text_content() for doc in docs_retrieved])
+        # prompt = eval_template(prompt_templ, documents=docs_texts, query=query)
+        # from ragpipe.llms import llm_router
+        # resp = llm_router(prompt, model=llm_model)
 
 
     def run(self, respond_flag=False):
@@ -53,7 +56,7 @@ class Workflow:
         for doc in docs_retrieved: doc.show()
 
         if respond_flag:
-            return self.respond(query_text, docs_retrieved, config.prompts['qa'], config.llm_models.default) 
+            return self.respond(query_text, docs_retrieved, config.prompts['qa'], config.llm_models.__default__) 
         else:
             return docs_retrieved
 

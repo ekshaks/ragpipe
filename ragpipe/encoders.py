@@ -6,7 +6,7 @@ from fastembed import SparseTextEmbedding, TextEmbedding
 
 from .common import DotDict, printd, load_func
 from .docnode import DocNode
-from .ops import np_to_torch, qD_sparse_similarity
+from .ops import np_to_torch, qD_sparse_similarity, qD_cosine_similarity
 from .colbert import Colbert
 
 from pydantic import BaseModel
@@ -117,7 +117,7 @@ class FastEmbedEncoder(Encoder):
             case 'prithivida/Splade_PP_en_v1':
                 sim_fn = qD_sparse_similarity
             case _:
-                sim_fn = None
+                sim_fn = qD_cosine_similarity
         return sim_fn
 
 class ColbertEncoder(Encoder):

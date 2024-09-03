@@ -13,8 +13,9 @@ class BMXIndex(BaseIndex):
 
     def add(self, docs, doc_paths, is_query=False, docs_already_encoded=False):
         #doc_ids = [str(i) for i in range(len(docs))] 
+        #print('BMX: ', len(doc_paths))
         if is_query:
-            self.doc_embeddings.extend(docs) #query doesn't need to be encoded for `retrieve` later
+            self.doc_embeddings.extend(docs) #query is passthrough encoded
         else:
             self.idx.add_many(doc_paths, docs, show_progress=True)
 
