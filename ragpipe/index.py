@@ -116,6 +116,8 @@ class RPIndex(BaseIndex): #ragpipe index
 
         if self.storage_config is not None:
             storage = self.get_storage()
+            size = doc_embeddings[0].size()
+            printd(2, f'>> Adding to storage: embeddings size = {size}')
             storage.add(doc_embeddings, doc_paths)
         else:
             self.doc_embeddings = doc_embeddings

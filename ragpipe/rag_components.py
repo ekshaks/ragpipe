@@ -6,7 +6,7 @@ from typing import List
 from .index import IndexConfig, IndexManager, ObjectIndex, RPIndex
 
 
-from .common import get_fpath_items, get_collection_name, printd, load_func
+from .common import get_fpath_items, get_collection_name, printd, load_func, detect_type
 from .docnode import ScoreNode
 
 from .db import StorageConfig
@@ -37,10 +37,14 @@ def encode_and_index(items, ic: IndexConfig, is_query=False):
                     raise ValueError(f'Unable to find enc-indexer {encoder_name}')
 
     else:
-        item_type = type(items[0]).__name__
-        if item_type != 'str': #handle LI text nodes. TODO: what if LI documents?
-            assert 'TextNode' in item_type, f'Expected item {ic.repname} of type str, but found {item_type}'
-            items = [item.text for item in items]
+        if not isinstance(items[0], str): #handle LI text nodes. TODO: what if LI documents?
+            item_type = type(items[0]).__name__
+            
+            if 'TextNode' in item_type: #legacy, TODO: remove!
+                items = [item.text for item in items]
+            else:
+                item_type = detect_type(items[0])
+                assert item_type != 'Unknown'
 
 
         reps_index = RPIndex(index_config=ic)

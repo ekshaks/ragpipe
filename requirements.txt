@@ -16,3 +16,4 @@ safetensors
 qdrant-client
 ollama
 sympy
+pdf2image

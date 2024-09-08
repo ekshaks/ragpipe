@@ -36,6 +36,8 @@ class EncoderConfig(BaseModel, frozen=True):
 
     with_index: bool = False
     module: Optional[str] = None #external module
+    device: Optional[str] = 'cpu'
+    batch_size: int = 1
 
     #TODO refactor below into EncoderShapeConfig
     dtype: Optional[str] = ''

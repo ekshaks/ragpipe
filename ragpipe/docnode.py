@@ -1,6 +1,6 @@
 from typing import List, Any
 from pydantic import BaseModel
-from .common import printd
+from .common import detect_type, printd
 
 class DocNode(BaseModel):
     type: str = 'text' #text, image, audio
@@ -75,6 +75,8 @@ class ScoreNode(DocNode):
                 values = '[' + ','.join([f'{b}:{rank}' for b, rank in self.bridge2rank.items()]) + ']'
             text = self.li_node[:truncate_at]
             print(f' 👉 {self.score:.3f} {values} ({self.doc_path}) 👉 ', text)
+        elif detect_type(self.li_node) == 'Image':
+            print(' 👉 ', self.score, self.doc_path, '\n\n')
         else:
             truncate_at = truncate_at or 400
             text = self.li_node.get_content()[:truncate_at]

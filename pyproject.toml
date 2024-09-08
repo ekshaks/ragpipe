@@ -5,7 +5,7 @@ description = "ragpipe: iterate quickly on your RAG pipelines."
 authors = ["Nishant Sinha <nishant@offnote.co>"]
 license = "Apache 2.0"
 readme = "README.md"
-packages = [{include = "ragpipe"}]
+packages = [{include = "ragpipe"}, {include = "ext"}]
 
 [tool.poetry.dependencies]
 python = ">=3.8.1,<3.13"
@@ -19,6 +19,7 @@ jinja2 = "*"
 safetensors = "*"
 typer = "*"
 sympy = "*"
+pdf2image = "*"
 
 [tool.poetry.extras]
 db = ["qdrant_client"]

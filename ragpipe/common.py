@@ -138,3 +138,21 @@ def get_collection_name(fpath, repname):
 def generate_uuid_from_string(input_string):
     import uuid
     return str(uuid.uuid5(uuid.NAMESPACE_OID, input_string))
+
+
+def detect_type(item):
+    from PIL import Image
+    from io import BytesIO
+    try:
+        if isinstance(item, Image.Image):
+            return "Image"
+        # Try opening the item as an image
+        Image.open(BytesIO(item)).verify()
+        return "Image"
+    except (IOError, SyntaxError):
+        try:
+            # If it's not an image, check if it's text
+            item.decode('utf-8')
+            return "Text"
+        except (UnicodeDecodeError, AttributeError):
+            return "Unknown"
