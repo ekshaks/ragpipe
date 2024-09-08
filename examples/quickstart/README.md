@@ -2,7 +2,7 @@
 
 ## Quickstart File Templates
 
-To start building your project with ragpipe, copy `project.py` and `project.yml` and modify to create appropriate data pipelines, representation and bridge configs, etc. .
+To start building your project with ragpipe, copy [project.py](project.py) and [project.yml](project.yml) and modify to create appropriate data pipelines, representation and bridge configs, etc. .
 
 
 ## End-to-End Example

@@ -19,3 +19,22 @@ identify_paras: | #todo: structure the output
   The following is an article in markdown format where paragraphs are split down to individual sentences. Identify the paragraph boundaries so that each paragraph contains related content.
 
 extract_relevant: Extract all relevant information from the chunks processed so far to answer the original query.
+
+rewrite_query_in_context: |
+  You are a helpful assistant. You are given a query and a list of previous queries and answers. You need to rewrite the query in light of the previous queries and answers.
+  ```
+  Query: {{query}}
+  Previous queries and answers: {{memory}}
+  ```
+  Rewrite the query:
+  {{rewrite_query}}
+
+rewrite_query_standalone: |
+  """Given the following conversation and a follow up question, rephrase the 
+  follow up question to be a standalone question, in its original language.
+
+  Chat History:
+  {{chat_history}}
+  Follow Up Input: {{question}}
+  Standalone question:"""
+  
