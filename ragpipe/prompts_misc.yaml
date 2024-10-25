@@ -30,11 +30,18 @@ rewrite_query_in_context: |
   {{rewrite_query}}
 
 rewrite_query_standalone: |
-  """Given the following conversation and a follow up question, rephrase the 
+  Given the following conversation and a follow up question, rephrase the 
   follow up question to be a standalone question, in its original language.
 
   Chat History:
   {{chat_history}}
   Follow Up Input: {{question}}
-  Standalone question:"""
+  Standalone question:
+
+adapt_query: |
+  Adapt and rewrite the following generic query so that the output query elicits specific information from the document.
+  Input Query: {{query}}
+  Document Context: {{doc_context}}
+  Output Specific Query: 
+
   

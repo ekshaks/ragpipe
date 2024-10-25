@@ -160,7 +160,7 @@ pytest examples/test_all.py
 
 Ragpipe relies on 
 - `rank_bm25`: for BM25 based retrieval
-- `fastembed`: dense and sparse embeddings
+- `fastembed`, `sentence-transformers`: dense and sparse embeddings
 - `chromadb`, `qdrant-client`: vector databases (more coming..)
 - `litellm`: interact with LLM APIs
 - `jinja2`: prompt formatting
