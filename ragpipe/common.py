@@ -149,7 +149,7 @@ def detect_type(item):
         # Try opening the item as an image
         Image.open(BytesIO(item)).verify()
         return "Image"
-    except (IOError, SyntaxError):
+    except (IOError, SyntaxError, TypeError):
         try:
             # If it's not an image, check if it's text
             item.decode('utf-8')

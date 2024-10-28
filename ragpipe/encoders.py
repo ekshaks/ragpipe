@@ -55,7 +55,8 @@ class LLMEncoder(Encoder):
     def encode(self, docs, is_query=False):
         from . import llm_bridge
         prompt = self.config.prompt
-        return llm_bridge.transform(docs, self.config.name, prompt=prompt, is_query=is_query)
+        model = 'groq/llama3-70b-8192'
+        return llm_bridge.transform(docs, self.config.name, model=model, prompt=prompt, is_query=is_query)
     
     @classmethod
     def from_config(cls, config): 

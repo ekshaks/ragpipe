@@ -1,5 +1,6 @@
 import os
 from dotenv import load_dotenv
+from .common import printd
 
 load_dotenv()  # Load the .env file
 
@@ -58,11 +59,22 @@ def llm_router(prompt, model=None, ollama_host=None):
       return cloud_llm(prompt, model=model)
       
       
-def respond_to_contextual_query(query, docs_retrieved, prompt_templ, model='groq/mixtral-8x7b-32768'):
+def respond_to_contextual_query(query, docs_retrieved, prompt_templ, model=None, config=None):
     from .prompts import eval_template
     docs_texts = '\n'.join([doc.get_text_content() for doc in docs_retrieved])
     prompt = eval_template(prompt_templ, documents=docs_texts, query=query)
-    resp = llm_router(prompt, model=model)
+    if model is None:
+      if config is not None:
+        model = config.llm_models['__default__']
+      else:
+        raise ValueError('''respond_to_contextual_query: No model specified. Either specify the `model` parameter or pass in the `config` parameter.
+                         ''')
+    
+    ollama_host = None 
+    if config is not None:
+      ollama_host = config.llm_models.get('ollama_host')
+       
+    resp = llm_router(prompt, model=model, ollama_host=ollama_host)
     return resp
 
 

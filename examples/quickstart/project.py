@@ -10,6 +10,7 @@ class Workflow:
         from ragpipe.config import load_config
         parent = Path(__file__).parent
         config = load_config(f'{parent}/project.yml', show=True)
+        self.config = config
         data_folder = config.etc['data_folder']
         
         assert Path(data_folder).exists(), f'Data folder not found. Please clone github.com/ragpipe/data and point config variable etc/data_folder in startups.yml to the data folder.'
@@ -32,7 +33,8 @@ class Workflow:
 
     def respond(self, query, docs_retrieved, prompt_templ, llm_model):
         from ragpipe.llms import respond_to_contextual_query
-        resp = respond_to_contextual_query(query, docs_retrieved, prompt_templ, model=llm_model)
+        resp = respond_to_contextual_query(query, docs_retrieved, prompt_templ, model=llm_model) 
+        #resp = respond_to_contextual_query(query, docs_retrieved, prompt_templ, config=self.config) # to pickup the default model from config.llm_models
         return resp
     
         # Alternatively, create the prompt manually and call an LLM

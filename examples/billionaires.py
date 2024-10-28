@@ -61,7 +61,7 @@ class Workflow:
         if respond_flag:
             from ragpipe.llms import respond_to_contextual_query
 
-            resp = respond_to_contextual_query(query_text, docs_retrieved, config.prompts['qa']) 
+            resp = respond_to_contextual_query(query_text, docs_retrieved, config.prompts['qa'], config=config) 
             print('Answer:\n', resp)
         
         return docs_retrieved

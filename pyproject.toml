@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ragpipe"
-version = "0.0.2.8"
+version = "0.0.2.9"
 description = "ragpipe: iterate quickly on your RAG pipelines."
 authors = ["Nishant Sinha <nishant@offnote.co>"]
 license = "Apache 2.0"
