@@ -183,7 +183,7 @@ def deep_update(source, overrides):
             source[key] = value
     return source
 
-def load_config(source, is_file=True, overrides='overrides.yaml', show=False):
+def load_config(source, is_file=True, overrides='overrides.yaml', show=False, as_dict=False):
     import yaml
     if is_file:
         with open(source, 'r') as file:
@@ -209,7 +209,11 @@ def load_config(source, is_file=True, overrides='overrides.yaml', show=False):
     if show:
         from pprint import pprint
         pprint(config.model_dump(exclude_none=True))
-    return config
+    
+    if as_dict:
+        return configd
+    else:
+        return config
 
 @appt.command()
 def load_config_cmd(fname, show: bool = typer.Option(False, "--show")):

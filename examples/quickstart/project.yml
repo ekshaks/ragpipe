@@ -30,8 +30,11 @@ encoders:
   bge_small:
     name: BAAI/bge-small-en-v1.5
     query_instruction: "Represent this sentence for searching relevant passages:"
+  
   bm25:
     name: bm25
+    with_index: true
+
   colbert:
     name: colbert-ir/colbertv2.0 
   mxlargebin:
