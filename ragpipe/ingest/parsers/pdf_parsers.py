@@ -74,7 +74,7 @@ async def pdf_to_markdown(file_path):
     markdown, _, _ = convert_single_pdf(pdf_buffer, models)
     yield markdown
 
-def pdf_to_image(file_path, output_dir=None):
+def pdf_to_images(file_path, output_dir=None, format='png'):
     print(f"Extracting images from {file_path} ==> {output_dir}")
     from pdf2image import convert_from_path
     images = convert_from_path(file_path)
@@ -84,7 +84,7 @@ def pdf_to_image(file_path, output_dir=None):
             output_dir.mkdir(parents=True, exist_ok=True)
     
         for i, image in enumerate(images):
-            image.save(f'{output_dir}/page_{i+1}.png', 'PNG')
+            image.save(f'{output_dir}/page_{i+1}.{format}', format.upper())
             
     return images
 
@@ -114,7 +114,7 @@ def test():
     assert Path(file_path).exists()
     #elements = pdf_to_section_tables(file_path); print(elements)
     #return elements
-    pdf_to_image(file_path, Path("./data/pitches/images"))
+    pdf_to_images(file_path, Path("./data/pitches/images"))
 
 if __name__ == "__main__":
     test()

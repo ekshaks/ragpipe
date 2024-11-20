@@ -1,0 +1,95 @@
+# This is a quickstart config example to get you started. 
+# Edit the representations, bridges, merges, queries, etc. to customize.
+
+prompts:
+  qa1: |
+    The following are snippets from a document in markdown format.
+    # documents
+
+    {{documents}}
+
+    Answer the following query based on the above document snippets. 
+    If the snippets cannot help answer the query, respond as <answer>Unknown</answer>
+
+    {{query}}
+    Answer:
+  vqa1: |
+    Based on the images, answer the following query in markdown format.
+    If the images do not contain answer to the query, respond as <answer>Unknown</answer>.
+    
+    {{query}}
+    Answer:
+  vqa2: |
+    List what you observe in this image in JSON format.
+  vqa3: |
+    Convert the provided image into Markdown format. Ensure that all content from the page is included, such as headers, footers, subtexts, images (with alt text if possible), tables, and any other elements.
+
+    Requirements:
+
+    - Output Only Markdown: Return solely the Markdown content without any additional explanations or comments.
+    - No Delimiters: Do not use code fences or delimiters like \`\`\`markdown.
+    - Complete Content: Do not omit any part of the page, including headers, footers, and subtext.
+
+dbs:
+  chroma:
+    path: /tmp/ragpipe/chroma/
+    name: chromadb
+  qdrant:
+    path: /tmp/ragpipe/qdrant/
+    name: qdrantdb
+    options:
+      vector: {distance: 'cosine'}
+      optimizers: {memmap_threshold: 20000}
+      hnsw: {on_disk: true}
+  tensordb:
+    path: /tmp/ragpipe/tensordb/
+    name: tensordb
+encoders:
+  bge_small:
+    name: BAAI/bge-small-en-v1.5
+    query_instruction: "Represent this sentence for searching relevant passages:"
+  
+  bm25:
+    name: bm25
+    with_index: true
+
+  colbert:
+    name: colbert-ir/colbertv2.0 
+  mxlargebin:
+    name: mxlargebin
+    query_instruction: "Represent this sentence for searching relevant passages: "
+    module: ext.libs.mxbai.MXLarge
+    shape: {size: 512, dtype: 'ubinary'}
+  colpali:
+    name: vidore/colpali-v1.2
+    module: ext.libs.colpali.ColpaliEnc
+    device: mps
+    batch_size: 2 
+  
+
+representations:
+    query.text:
+      col: {encoder: colpali}
+
+    .images[].image_path:
+      col: {encoder: colpali, store: tensordb}
+
+
+bridges:
+  b_col:
+      repnodes: query.text#col, .images[].image_path#col
+      limit: 5
+
+llm_models:
+  __default__: groq/llama3-70b-8192
+  llmv1: groq/llama-3.2-11b-vision-preview 
+  llmv2: groq/llama-3.2-90b-vision-preview
+
+etc:
+  data_folder: ./data
+  
+queries:
+  - get the revenue, operating income and net income from the income statement for all years
+  - query 2
+  - query 3
+

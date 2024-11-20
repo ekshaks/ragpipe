@@ -1,5 +1,6 @@
 from typing import List, Any
 from pydantic import BaseModel
+from pathlib import Path
 from .common import detect_type, printd
 
 class DocNode(BaseModel):
@@ -36,6 +37,10 @@ class DocNode(BaseModel):
         else:
             return self.li_node
     
+    def get_file_path(self):
+        assert isinstance(self.li_node, Path), f'file path not found. doc type is {type(self.li_node)}'
+        return self.li_node
+    
     def tfm_docpath(self, path, D, reload=True):
         from .common import tfm_docpath as tfm
         self.doc_path = tfm(self.doc_path, path)
@@ -62,8 +67,6 @@ class DocNode(BaseModel):
         #return self
 
 
-
-
 class ScoreNode(DocNode):
     score: float = None
     def show(self, truncate_at=None):
@@ -76,7 +79,8 @@ class ScoreNode(DocNode):
             text = self.li_node[:truncate_at]
             print(f' 👉 {self.score:.3f} {values} ({self.doc_path}) 👉 ', text)
         elif detect_type(self.li_node) == 'Image':
-            print(' 👉 ', self.score, self.doc_path, '\n\n')
+            path = self.li_node if isinstance(self.li_node, Path) else ''
+            print(' 👉 ', self.score, self.doc_path, path, '\n\n')
         else:
             truncate_at = truncate_at or 400
             text = self.li_node.get_content()[:truncate_at]

@@ -13,7 +13,7 @@ class Workflow:
         self.config = config
         data_folder = config.etc['data_folder']
         
-        assert Path(data_folder).exists(), f'Data folder not found. Please clone github.com/ragpipe/data and point config variable etc/data_folder in startups.yml to the data folder.'
+        assert Path(data_folder).exists(), f'Data folder not found. Please clone github.com/ragpipe/data and point config variable etc/data_folder in project.yml to the data folder.'
         json_path = f'{data_folder}/project/data.json'
         assert Path(json_path).exists(), f'Data JSON file not found: {json_path}!'
 

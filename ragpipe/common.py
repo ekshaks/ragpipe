@@ -143,9 +143,14 @@ def generate_uuid_from_string(input_string):
 def detect_type(item):
     from PIL import Image
     from io import BytesIO
+    from pathlib import Path
     try:
         if isinstance(item, Image.Image):
             return "Image"
+        if isinstance(item, Path): #only allow image files
+            Image.open(item).verify()
+            return "Image"
+
         # Try opening the item as an image
         Image.open(BytesIO(item)).verify()
         return "Image"
