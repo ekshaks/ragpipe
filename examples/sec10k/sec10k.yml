@@ -78,7 +78,7 @@ representations:
 bridges:
   b_col:
       repnodes: query.text#col, .images[].image_path#col
-      limit: 5
+      limit: 3
 
 llm_models:
   __default__: groq/llama3-70b-8192

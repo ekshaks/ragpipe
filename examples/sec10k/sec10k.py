@@ -31,6 +31,27 @@ def concat_files(md_reps):
 
     return concatenated_content
 
+def filter_llm(input_reps):
+    #https://blog.dottxt.co/extracting-financial-data.html
+    
+    import outlines
+    import numpy as np
+    model = outlines.models.transformers("microsoft/Phi-3.5-mini-instruct")
+
+    # Classification function
+    yesno = outlines.generate.choice(model, ['Yes', 'Maybe', 'No'])
+
+    # Requesting a classification from the model
+    results = [ yesno(
+        f"Is the following document about an income statement? Document: {rep}"
+    ) for rep in input_reps]
+    results = np.array(results)
+    inputs = np.array(input_reps)
+
+    filtered = inputs[results == 'Yes']
+    return filtered
+
+
 def map_agg_vlm(input_reps, llmops):
     from ragpipe.llms import cloud_vlm
     #print(f'processing {image_paths}')    
@@ -43,6 +64,7 @@ def map_agg_llm(md_paths, config):
     results = map(tmap_op, mdpaths)
     result = agg(tagg_op, results)
     '''
+
 
 class Workflow:
     # 
@@ -105,7 +127,7 @@ class Workflow:
                                 params=DotDict(max_images_per_call=1)
                 )
             )
-            res = map_agg_vlm(image_reps, ops, vlm=vlm)
+            res = map_agg_vlm(image_reps, ops)
             printd(1, res)
         else: 
             # images -> md, then use text llm
@@ -122,11 +144,18 @@ class Workflow:
 def test_vlm():
     from pathlib import PosixPath
     image_paths = [PosixPath('data/sec10k/images/page_50.png'), PosixPath('data/sec10k/images/page_78.png'), PosixPath('data/sec10k/images/page_39.png'), PosixPath('data/sec10k/images/page_53.png'), PosixPath('data/sec10k/images/page_36.png'), PosixPath('data/sec10k/images/page_54.png'), PosixPath('data/sec10k/images/page_55.png'), PosixPath('data/sec10k/images/page_58.png'), PosixPath('data/sec10k/images/page_38.png'), PosixPath('data/sec10k/images/page_44.png')]
+    image_paths = [DotDict(image_path=p) for p in image_paths]
     config, _, query = Workflow().init()
-    prompt_templ = config.prompts['vqa1']
-    res = map_agg_vlm(query, image_paths[:1], prompt_templ, model=config.llm_models['llmv2'], vlm=True)
+    image_prompt = eval_template(config.prompts['vqa1'], query=query)
+
+    ops = DotDict(
+            combined_op= LLMOp(prompt=image_prompt, model=config.llm_models['llmv2'], 
+                            params=DotDict(max_images_per_call=1)
+            )
+        )
+    res = map_agg_vlm(image_paths, ops)
     print(res)
 
 if __name__ == '__main__':
-    Workflow().run()
+    Workflow().run(vlm=True)
     #test_vlm()

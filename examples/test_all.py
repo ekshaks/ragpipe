@@ -12,7 +12,9 @@ def test_insurance():
     docs = Workflow().run(respond_flag=False)
     assert len(docs) > 0
 
+'''
 def test_billionaires():
     from .billionaires import Workflow
     docs = Workflow().run(respond_flag=False)
     assert len(docs) > 0
+'''

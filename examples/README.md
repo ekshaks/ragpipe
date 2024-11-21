@@ -26,8 +26,8 @@ python -m examples.startups
 ```
 
 
-## Billionaires
+## SEC 10k
 
 ```bash 
-python -m examples.billionaires
+python -m examples.sec10k.sec10k
 ```
