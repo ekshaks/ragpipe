@@ -26,6 +26,12 @@ Watch a quick [video intro](https://www.youtube.com/playlist?list=PLLPfjV1xMkS1k
 
 *Note: Under active development. Expect breaking changes.*
 
+**Updates**
+
+* 21.11.24. Added [SEC10k example](examples/sec10k/) using Colpali, Docling, VLMs.
+* 25.10.24. Support for [Model2Vec plugin](ext/libs/model2vec.py).
+* 3.9.24. FounderMode [cookbook](examples/quickstart/pg.ipynb).
+
 ---
 
 Instead of the usual `chunk-embed-match-rank` flow, Ragpipe adopts a holistic, end-to-end view of the pipeline:

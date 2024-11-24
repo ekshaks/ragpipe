@@ -161,3 +161,47 @@ def detect_type(item):
             return "Text"
         except (UnicodeDecodeError, AttributeError):
             return "Unknown"
+
+
+import time
+import jsonlines
+from contextlib import contextmanager
+
+
+@contextmanager
+def rp_timer(name, run_data):
+    if len(run_data) == 0:
+        run_data.update({"run_timestamp": time.strftime("%Y-%m-%d %H:%M:%S"), "sections": []})
+
+    start_time = time.time()
+    yield
+    elapsed_time = time.time() - start_time
+    
+    part_entry = {
+        "section": name,
+        "execution_time": round(elapsed_time, 6)
+    }
+    
+    print(part_entry)  # Optional: Print to console
+    run_data["sections"].append(part_entry)
+
+def test_timer():
+    log_file = "timing_log.jsonl"
+
+    run_data = {}
+    with rp_timer("Part 1", run_data):
+        sum([i**2 for i in range(1000000)])
+    
+    with rp_timer("Part 2", run_data):
+        time.sleep(1.5)
+    
+    with rp_timer("Part 3", run_data):
+        for _ in range(5000000):
+            pass
+    
+    # Log entire run data as a single JSONLines entry
+    with jsonlines.open(log_file, mode='a') as writer:
+        writer.write(run_data)
+
+if __name__ == '__main__':
+    test_timer()

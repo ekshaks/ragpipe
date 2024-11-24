@@ -6,7 +6,22 @@ from docling_core.types.doc.labels import DocItemLabel
 
 import json
 
+'''
+https://github.com/DS4SD/docling/issues/391#issuecomment-2492714238
 
+from docling_core.types.doc import ImageRefMode, PictureItem, TableItem
+from docling.datamodel.base_models import FigureElement, InputFormat, Table
+from docling.datamodel.pipeline_options import PdfPipelineOptions
+from docling.document_converter import DocumentConverter, PdfFormatOption
+
+from docling.datamodel.pipeline_options import PdfPipelineOptions
+IMAGE_RESOLUTION_SCALE = 2.0
+
+pipeline_options = PdfPipelineOptions()
+    pipeline_options.images_scale = IMAGE_RESOLUTION_SCALE
+    pipeline_options.generate_page_images = True
+    pipeline_options.generate_picture_images = True
+'''
 
 def pdf_to_md(pdf_path, out_file=None, redo=False):
     if not out_file:
@@ -43,7 +58,9 @@ def image_ids_to_md(images_dir, image_ids = [50, 78, 39], img_prefix='page_', im
 def image_files_to_md(image_paths, out_dir=None):
     for img_path in image_paths:
         assert img_path.exists(), f'{img_path} does not exist.'
-    docling_options = {}
+    docling_options = dict(
+        images_scale = 1.0 #72 dpi
+    )
 
     if out_dir is None: out_dir = image_paths[0].parent
 

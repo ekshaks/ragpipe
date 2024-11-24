@@ -44,6 +44,7 @@ dbs:
   tensordb:
     path: /tmp/ragpipe/tensordb/
     name: tensordb
+
 encoders:
   bge_small:
     name: BAAI/bge-small-en-v1.5
@@ -64,7 +65,7 @@ encoders:
     name: vidore/colpali-v1.2
     module: ext.libs.colpali.ColpaliEnc
     device: mps
-    batch_size: 2 
+    batch_size: 2
   
 
 representations:
@@ -72,7 +73,7 @@ representations:
       col: {encoder: colpali}
 
     .images[].image_path:
-      col: {encoder: colpali, store: tensordb}
+      col: {encoder: colpali} #, store: tensordb}
 
 
 bridges:
@@ -87,6 +88,10 @@ llm_models:
 
 etc:
   data_folder: ./data
+  log_file: ./data/sec10k/logs.jsonl
+  use_vlm: false
+  pdf2image:
+    dpi: 84
   
 queries:
   - get the revenue, operating income and net income from the income statement for all years

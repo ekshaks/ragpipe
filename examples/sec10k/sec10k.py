@@ -1,7 +1,9 @@
 from pathlib import Path
+import jsonlines
 from ragpipe.common import DotDict, printd
 from ragpipe.prompts import eval_template
 from ragpipe.llms import LLMOp
+from ragpipe.common import rp_timer
 
 def concat_files(md_reps):
     """
@@ -71,21 +73,25 @@ class Workflow:
     def init(self, query_id=0):
         from ragpipe.config import load_config
         parent = Path(__file__).parent
-        config = load_config(f'{parent}/sec10k.yml', show=True)
+        config = load_config(f'{parent}/sec10k.yml', show=False)
         self.config = config
 
         data_folder = Path(config.etc['data_folder'])
         assert data_folder.exists(), f'Data folder not found. Please clone github.com/ragpipe/data and point config variable etc/data_folder in .yml to the data folder.'
         pdf_path = list((data_folder/'sec10k').glob('*.pdf'))[0]
         query_text = config.queries[query_id]
+
+        self.run_data = {}
         return config, pdf_path, query_text
     
-    def build_data_model(self, pdf_path, redo=False):
+    def build_data_model(self, pdf_path, redo=False, dpi=200):
         from ragpipe.ingest.parsers.pdf_parsers import pdf_to_images
         output_dir = pdf_path.parent / 'images'
         output_dir.mkdir(exist_ok=True, parents=True)
-        if redo:
-            pdf_to_images(pdf_path, output_dir)
+        
+        with rp_timer("pdf2image", self.run_data):
+            self.run_data.setdefault('params', {})['dpi'] = dpi
+            if redo: pdf_to_images(pdf_path, output_dir, dpi = dpi)
         images = [dict(image_path=fpath) for fpath in output_dir.glob('*.png')]
         D = DotDict(images=images)
         return D
@@ -104,14 +110,15 @@ class Workflow:
         # resp = llm_router(prompt, model=llm_model)
 
 
-    def run(self, respond_flag=False, vlm=False):
+    def run(self, respond_flag=False):
         config, json_path, query_text = self.init()
        
-        D = self.build_data_model(json_path)
+        D = self.build_data_model(json_path, redo=True, dpi = config.etc['pdf2image']['dpi'])
         printd(1, '-==== over build data model')
 
-        from ragpipe import Retriever
-        docs_retrieved = Retriever(config).eval(query_text, D)
+        with rp_timer("retriever", self.run_data):
+            from ragpipe import Retriever
+            docs_retrieved = Retriever(config).eval(query_text, D)
 
         printd(1, f'query: {query_text}')
         for doc in docs_retrieved: doc.show() #.images[].image_path
@@ -121,6 +128,7 @@ class Workflow:
         
         image_prompt = eval_template(config.prompts['vqa1'], query=query_text)
 
+        vlm = config.etc['use_vlm']
         if vlm: #use mm llm to extract answer from images
             ops = DotDict(
                 combined_op= LLMOp(prompt=image_prompt, model=config.llm_models['llmv2'], 
@@ -134,12 +142,20 @@ class Workflow:
             from ragpipe.ingest.parsers.docling_parser import image2md
             from ragpipe.llms import llm_router
 
-            md_reps = image2md(image_reps)
+            with rp_timer("image2md", self.run_data):
+                md_reps = image2md(image_reps)
             #res = map_agg_llm(query_text, md_reps, ops)
             md_agg_rep = concat_files(md_reps)
             prompt = eval_template(config.prompts['qa1'], query=query_text, documents=md_agg_rep)
             res = llm_router(prompt, model=config.llm_models['__default__'])
             printd(1, res)
+        
+        gt = ['60,922', '26,974', '26,914']
+        valid = all([g in res for g in gt])
+        print('res valid? ', valid)
+        self.run_data['valid'] = valid
+        with jsonlines.open(config.etc['log_file'], mode='a') as writer:
+            writer.write(self.run_data)
 
 def test_vlm():
     from pathlib import PosixPath
@@ -157,5 +173,5 @@ def test_vlm():
     print(res)
 
 if __name__ == '__main__':
-    Workflow().run(vlm=True)
+    Workflow().run()
     #test_vlm()

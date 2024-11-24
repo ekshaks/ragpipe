@@ -74,10 +74,14 @@ async def pdf_to_markdown(file_path):
     markdown, _, _ = convert_single_pdf(pdf_buffer, models)
     yield markdown
 
-def pdf_to_images(file_path, output_dir=None, format='png'):
+def pdf_to_images(file_path, output_dir=None, format='png', prefix='page_', dpi: int = 200):
     print(f"Extracting images from {file_path} ==> {output_dir}")
     from pdf2image import convert_from_path
-    images = convert_from_path(file_path)
+
+    #turns out slower for png
+    #image_paths = convert_from_path(file_path, dpi=dpi, output_folder=output_dir, output_file = prefix, fmt=format, paths_only=True)
+
+    images = convert_from_path(file_path, dpi=dpi)
 
     if output_dir is not None:
         if not output_dir.exists():
