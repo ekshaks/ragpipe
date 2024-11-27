@@ -36,7 +36,7 @@ Watch a quick [video intro](https://www.youtube.com/playlist?list=PLLPfjV1xMkS1k
 
 Instead of the usual `chunk-embed-match-rank` flow, Ragpipe adopts a holistic, end-to-end view of the pipeline:
 
-- build a hierachical **document model**, 
+- build a hierarchical **document model**, 
 - **decompose** a complex query into sub-queries 
 - **resolve** sub-queries and obtain responses
 - **aggregate** the query responses.
@@ -87,7 +87,7 @@ For instructions follow https://pytorch.org/get-started/locally/
 
 To query over a data repository, 
 
-1. Build a hierachical data model over your data repositories, e.g., `{"documents" : [{"text": ...}, ...]}`. 
+1. Build a hierarchical data model over your data repositories, e.g., `{"documents" : [{"text": ...}, ...]}`. 
 
 2. In the `project.yml` config file:
 
