@@ -63,6 +63,12 @@ encoders:
     shape: {size: 512, dtype: 'ubinary'}
   colpali:
     name: vidore/colpali-v1.2
+    #name: vidore/colqwen2-v1.0
+    module: ext.libs.colpali.ColpaliEnc
+    device: mps
+    batch_size: 2
+  colpali_s:
+    name: vidore/colsmolvlm-alpha
     module: ext.libs.colpali.ColpaliEnc
     device: mps
     batch_size: 2

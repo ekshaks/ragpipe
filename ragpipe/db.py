@@ -58,7 +58,7 @@ class TensorCollection:
         with st_safe_open(self.file_path, framework="pt", device="cpu") as f:
             for path in f.keys():
                 tensor_dict[path] = f.get_tensor(path)
-        printd(2, f'TensorColl.retrieve: {list(tensor_dict.keys())}')
+        printd(3, f'TensorColl.retrieve: {list(tensor_dict.keys())}')
         doc_embeddings, doc_paths = TensorCollection.unflatten(tensor_dict)
         results = exact_nn(doc_embeddings, doc_paths, rep_query, similarity_fn=similarity_fn, limit=limit)
         #results: '(doc_path | score)*' #sorted
@@ -187,10 +187,10 @@ class Storage:
         self.C = config
         print(f'init storage: {config}, {type(config)}')
         dbp = config.db_props
-        from chromadb import PersistentClient
 
         match dbp.name:
             case 'chromadb':
+                from chromadb import PersistentClient
                 self.client = PersistentClient(path=dbp.path)
                 self.collection = self.client.get_or_create_collection(self.C.collection_name)
             case 'qdrantdb':

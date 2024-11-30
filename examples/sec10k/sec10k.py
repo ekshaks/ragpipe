@@ -154,7 +154,7 @@ class Workflow:
         valid = all([g in res for g in gt])
         print('res valid? ', valid)
         self.run_data['valid'] = valid
-        with jsonlines.open(config.etc['log_file'], mode='a') as writer:
+        with jsonlines.open(config.etc['log_file'], mode='a+') as writer:
             writer.write(self.run_data)
 
 def test_vlm():

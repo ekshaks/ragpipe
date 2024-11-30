@@ -18,13 +18,25 @@ try:
     # from colpali_engine.utils.colpali_processing_utils import process_images, process_queries
     # from colpali_engine.utils.image_from_page_utils import load_from_dataset
 except Exception as e:
-    print('To use colpali: please `pip install colpali-engine`')
+    print('To use colpali: please `pip install -U colpali-engine`')
     raise e
 
 from ragpipe.encoders import Encoder
 from ragpipe.common import printd
 
+from torch.utils.data import Dataset, DataLoader
 
+class ImageDataset(Dataset):
+    def __init__(self, image_paths):
+        self.image_paths = image_paths
+
+    def __getitem__(self, index):
+        image_path = self.image_paths[index]
+        image = Image.open(image_path)  # assuming PIL Image
+        return image
+
+    def __len__(self):
+        return len(self.image_paths)
 
 class ColpaliEnc(Encoder):
     @staticmethod
@@ -45,6 +57,16 @@ class ColpaliEnc(Encoder):
                 device_map=device
             ).eval()
             processor = ColQwen2Processor.from_pretrained(model_name)
+        elif 'colsmol' in model_name:
+            from colpali_engine.models import ColIdefics3, ColIdefics3Processor
+
+            model = ColIdefics3.from_pretrained(
+                    "vidore/colsmolvlm-alpha",
+                    torch_dtype=torch.bfloat16,
+                    device_map=device,
+                    attn_implementation="eager" #"flash_attention_2" or eager
+                ).eval()
+            processor = ColIdefics3Processor.from_pretrained("vidore/colsmolvlm-alpha")
 
         return model, processor
 
@@ -58,9 +80,7 @@ class ColpaliEnc(Encoder):
         return qs
 
     def encode(self, docs, is_query=False):
-        if isinstance(docs[0], Path):
-            docs = [Image.open(doc) for doc in docs]
-        elif isinstance(docs[0], (Image.Image, str)):
+        if isinstance(docs[0], (Path, Image.Image, str)):
             pass
         else:
             raise ValueError("Unsupported data type. Should be string or a Path-like object or a PIL Image.")
@@ -69,6 +89,7 @@ class ColpaliEnc(Encoder):
         batch_size = self.config.batch_size
 
         # Process the inputs
+
         if is_query:
             assert isinstance(docs[0], str)
             #batch_items = processor.process_queries(docs).to(model.device)
@@ -80,10 +101,13 @@ class ColpaliEnc(Encoder):
             )
 
         else:
-            assert isinstance(docs[0], Image.Image)
+            #assert isinstance(docs[0], Image.Image)
             #batch_items = processor.process_images(docs).to(model.device)
+            dataset = ImageDataset(docs)
+
             dataloader = DataLoader(
-                dataset=ListDataset[str](docs),
+                #dataset=ListDataset[str](docs),
+                dataset=dataset,
                 batch_size=batch_size,
                 shuffle=False,
                 collate_fn=lambda x: processor.process_images(x),

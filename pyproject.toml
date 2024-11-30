@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ragpipe"
-version = "0.0.2.9"
+version = "0.0.3.0"
 description = "ragpipe: iterate quickly on your RAG pipelines."
 authors = ["Nishant Sinha <nishant@offnote.co>"]
 license = "Apache 2.0"
@@ -21,6 +21,7 @@ safetensors = "*"
 typer = "*"
 sympy = "*"
 pdf2image = "*"
+docling = "*"
 
 [tool.poetry.extras]
 db = ["qdrant_client"]

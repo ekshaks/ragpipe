@@ -24,13 +24,11 @@ Yet another RAG framework? Although popular RAG frameworks make it easy to setup
 
 Watch a quick [video intro](https://www.youtube.com/playlist?list=PLLPfjV1xMkS1k9J7q2v3eQ2U-At6p3evM).
 
-*Note: Under active development. Expect breaking changes.*
-
 **Updates**
 
-* 21.11.24. Added [SEC10k example](examples/sec10k/) using Colpali, Docling, VLMs.
-* 25.10.24. Support for [Model2Vec plugin](ext/libs/model2vec.py).
-* 3.9.24. FounderMode [cookbook](examples/quickstart/pg.ipynb).
+* 21.11.24. Added [SEC10k example](examples/sec10k/) - query any PDF using Colpali, Docling, VLMs.
+* 25.10.24. Support for blazing fast [Model2Vec plugin](ext/libs/model2vec.py).
+* 3.9.24. Quickstart *FounderMode* notebook [cookbook](examples/quickstart/pg.ipynb).
 
 ---
 
@@ -48,6 +46,8 @@ How do we resolve each sub-query?
 - present the query and context to a language model to compute the final response
 
 The `represent-bridge-merge` pattern is very powerful and allows us to build and iterate over all kinds of complex retrieval pipelines, including those based on the traditional `retrieve-rank-rerank` pattern and more recent advanced RAG patterns. Evals can be attached to `bridge` or `merge` nodes to verify intermediate results. See examples below.
+
+*Note: Under active development. Expect breaking changes.*
 
 
 ## Installation
@@ -167,10 +167,10 @@ pytest examples/test_all.py
 Ragpipe relies on 
 - `rank_bm25`: for BM25 based retrieval
 - `fastembed`, `sentence-transformers`: dense and sparse embeddings
-- `chromadb`, `qdrant-client`: vector databases (more coming..)
+- `chromadb`, `qdrant-client`: vector databases (add more as plugins)
 - `litellm`: interact with LLM APIs
 - `jinja2`: prompt formatting
-- `LlamaIndex`: for parsing documents
+- `pdf2image`, `docling`: parsing PDFs, images
 
 
 ## Contribute

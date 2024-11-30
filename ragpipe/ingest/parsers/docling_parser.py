@@ -1,8 +1,12 @@
 from pathlib import Path
 
-from docling.datamodel.base_models import InputFormat
-from docling.document_converter import DocumentConverter, FormatOption
-from docling_core.types.doc.labels import DocItemLabel
+try:
+    from docling.datamodel.base_models import InputFormat
+    from docling.document_converter import DocumentConverter, FormatOption
+    from docling_core.types.doc.labels import DocItemLabel
+except Exception as e:
+    print('To use docling PDF parsing: please `pip install -U docling`')
+    raise e
 
 import json
 
@@ -75,6 +79,17 @@ def image_files_to_md(image_paths, out_dir=None):
         md_files.append(out_file)
     return md_files
 
+
 def image2md(image_reps, out_dir=None):
-    image_files = [imrep.image_path for imrep in image_reps]
-    return image_files_to_md(image_files, out_dir=out_dir)
+    image_paths = [imrep.image_path for imrep in image_reps ]
+    if out_dir is None: out_dir = image_paths[0].parent
+
+    all_md_files = [out_dir / f'{img.stem}.md' for img in image_paths]
+    # filter images for which md does not exist
+    image_files_f = list(filter(lambda x: not (out_dir / f'{x.stem}.md').exists(), image_paths))
+    #print(image_files_f)
+    _ = image_files_to_md(image_files_f, out_dir=out_dir)
+
+    # validate all images converted to md
+    for md in all_md_files: assert md.exists(), f'{md} does not exist.'
+    return all_md_files
