@@ -45,7 +45,11 @@ class RepManager:
                 print(f'Unable to resolve repkey {repkey}. Did you define rep config for {repkey} correctly?')
                 raise e
         
-        return self.reps[repkey]
+        try:
+            return self.reps[repkey]
+        finally:
+            if repkey.startswith('query.text'):
+                del self.reps[repkey] 
 
 
 RMPool = {} #config_fname -> RepManager (move to RepManager.from_config ?)
