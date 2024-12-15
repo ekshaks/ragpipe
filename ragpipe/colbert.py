@@ -116,7 +116,7 @@ def test_colbert():
         'we should play tennis tomorrow',
         'elections are due soon'
     ]
-    scores = colbert.compute_similarity(query, docs)
+    scores = colbert.compute_similarity_text(query, docs)
     print(scores)
     
 
