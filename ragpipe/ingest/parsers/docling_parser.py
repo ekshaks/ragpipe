@@ -1,4 +1,6 @@
 from pathlib import Path
+from ragpipe.common import printd
+from tqdm import tqdm
 
 try:
     from docling.datamodel.base_models import InputFormat
@@ -69,13 +71,16 @@ def image_files_to_md(image_paths, out_dir=None):
     if out_dir is None: out_dir = image_paths[0].parent
 
     converter = DocumentConverter(format_options=docling_options)
+    printd(2, 'docling converting..')
     conv_results_iter = converter.convert_all(image_paths)
     md_files = []
-    for i, doc in enumerate(conv_results_iter):
+    printd(2, f'docling export to md.. {len(image_paths)}')
+    for i, doc in enumerate(tqdm(conv_results_iter)):
         md = doc.document.export_to_markdown()
         path = image_paths[i]
         out_file = out_dir / f'{path.stem}.md'
         with open(out_file, 'w') as fp: fp.write(md)
+        print(out_file)
         md_files.append(out_file)
     return md_files
 

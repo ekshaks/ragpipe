@@ -32,7 +32,9 @@ def validate_model_keys(model):
   import os
   prefix_key_pairs = [
      ('groq/', 'GROQ_API_KEY'),
-     ('openai/', 'OPENAI_API_KEY')
+     ('openai/', 'OPENAI_API_KEY'),
+     ('gemini/', 'GEMINI_API_KEY')
+
   ]
 
   for prefix, api_key in prefix_key_pairs:

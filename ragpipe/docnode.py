@@ -1,7 +1,7 @@
 from typing import List, Any
 from pydantic import BaseModel
 from pathlib import Path
-from .common import detect_type, printd
+from .common import DotDict, detect_type, printd
 
 class DocNode(BaseModel):
     type: str = 'text' #text, image, audio
@@ -49,6 +49,19 @@ class DocNode(BaseModel):
         if reload: 
             self.load_docs(D)
             self.is_ref = False
+    
+    def get_doc_rep(self, field2path, D, extract_single=True):
+        from .common import tfm_docpath as tfm, get_fpath_items
+        res = DotDict()
+        for field, path in field2path.items():
+            field_path = tfm(self.doc_path, path)
+            item_dict = get_fpath_items(field_path, D)
+            els = item_dict['els']
+            if extract_single and len(els) == 1: els = els[0]
+            res[field] = els
+            #print('\nget_doc_rep: ', field_path, "->", res[field])
+        return res
+
 
     def load_docs(self, D):
         if not self.is_ref: 
@@ -69,7 +82,7 @@ class DocNode(BaseModel):
 
 class ScoreNode(DocNode):
     score: float = None
-    def show(self, truncate_at=None):
+    def show(self, truncate_at=100):
         assert not self.is_ref, 'Load doc before display'
         if isinstance(self.li_node, str):  #, f'li_node has type {type(self.li_node)}'
             values = ''

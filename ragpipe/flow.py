@@ -31,7 +31,17 @@ class RepManager:
         rep = compute_rep(fpath, D, self.dbs, 
                             rep_props=config, repname=repname, is_query=is_query, doc_pre_filter=doc_pre_filter)
         return rep
-   
+    
+    def clear_rep(self, repkey):
+        self.reps.pop(repkey, None)
+    
+    def clear_all_reps_fpath(self, fpath):
+        clear_keys = []
+        for k in self.reps.keys():
+            if fpath in k:
+                clear_keys.append(k)
+        for k in clear_keys: self.clear_rep(k)
+
     def get_or_create_rep(self, repkey, D, doc_pre_filter=[]):
         printd(1, f'computing reps for {repkey}...')
         if repkey not in self.reps:
@@ -43,6 +53,8 @@ class RepManager:
                 self.reps[repkey] = rep
             except Exception as e:
                 print(f'Unable to resolve repkey {repkey}. Did you define rep config for {repkey} correctly?')
+                n2r = n2r or {}
+                print(f'Defined rep names are: {list(n2r.keys())}')
                 raise e
         
         return self.reps[repkey]

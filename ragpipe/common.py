@@ -36,6 +36,7 @@ def load_func(dotpath : str):
     return getattr(m, func)
 
 import re
+#TODO: https://github.com/rayokota/jsonata-python
 def compile_jq(expression, data):
     l1, l2 = 3, 4
 
@@ -115,8 +116,12 @@ def get_fpath_items(fpath, D, docpath_pre_filter=set()):
 
 def tfm_docpath(path: 'docpath', tfm: str):
     # sections[].header -- ..,.text --> sections[].text
+    # jsonata: sections.header + '%.text' -> sections.text
+    #https://docs.jsonata.org/path-operators#-parent
+    
     #TODO: only handles '..' now. generalize.
-    parts = tfm.split(',')
+    sep = '/' if '/' in tfm else ','
+    parts = tfm.split(sep)
     opath = path
     for p in parts:
         match p:
