@@ -135,6 +135,14 @@ def tfm_docpath(path: 'docpath', tfm: str):
                 opath = opath + p
     return opath
 
+def get_field_value_by_tfm(doc_path, tfm_path, D, extract_single=True):
+
+    field_path = tfm_docpath(doc_path, tfm_path)
+    item_dict = get_fpath_items(field_path, D)
+    els = item_dict['els']
+    if extract_single and len(els) == 1: els = els[0]
+    return els
+
 def get_collection_name(fpath, repname):
     return 'C_' + fpath.replace('[]', '-').replace('.', '_') + f'_{repname}' + '_C'
 
