@@ -22,7 +22,7 @@ def encode_and_index(items, ic: IndexConfig, is_query=False):
     item_paths = ic.doc_paths
 
     if not is_query and ec.with_index:
-        print('encode_and-index: econfig = ', ec)
+        print('\n~~~~ encode_and-index ~~~~\n econfig = ', ec)
         match encoder_name:
             case 'bm25':
                 from ext.libs.bm25 import RankBM25Index

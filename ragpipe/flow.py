@@ -43,7 +43,7 @@ class RepManager:
         for k in clear_keys: self.clear_rep(k)
 
     def get_or_create_rep(self, repkey, D, doc_pre_filter=[]):
-        printd(1, f'computing reps for {repkey}...')
+        printd(1, f'\n ~~~~ computing reps for {repkey}...')
         if repkey not in self.reps:
             fpath, repname = self.decomp_field_repname(repkey)
             n2r = self.name2repconfig
@@ -60,14 +60,16 @@ class RepManager:
         return self.reps[repkey]
 
 
-RMPool = {} #config_fname -> RepManager (move to RepManager.from_config ?)
-
-def get_or_create_rep_manager(config: RPConfig):
+def create_rep_manager(config: RPConfig): 
+    '''
+    Only create right now. TODO: cache strategy?
+    RMPool: Dict[str, RepManager] = {}
     config_fname = config.config_fname
     RM = RMPool.get(config_fname, None)
     if RM is None:
-        RM = RepManager(config)
-        RMPool[config_fname] = RM
+    '''
+    RM = RepManager(config)
+    #    RMPool[config_fname] = RM
     return RM
 
 
@@ -90,23 +92,24 @@ class BridgeRetriever:
         self.name = bridge_name
         self._config = config
         self.bconfig = config.bridges[bridge_name]
-        if RM is None: self.RM = get_or_create_rep_manager(config)
-        else: self.RM = RM
+        self.RM = RM or create_rep_manager(config)
+        # clear query reps. TODO: here or at callee?
+        # self.RM.clear_all_reps_fpath('query')
 
     def eval(self, query_text, D, doc_pre_filter: List[ScoreNode]=[], **kwargs):
-        printd(2, f'Start eval Bridge({self.name}): {self.bconfig}')
+        printd(2, f'\n===== Start eval Bridge({self.name}) =====\nbridge config = {self.bconfig}\n')
         if not has_field(D, 'query'):
             D.query = DotDict(text=query_text)
 
         repnodes = self.bconfig.repnodes
         assert isinstance(repnodes, list) and len(repnodes) == 2, f'{repnodes}'
         limit = self.bconfig.limit or DEFAULT_LIMIT
-        
+
         # create reps
         reps = [self.RM.get_or_create_rep(repkey, D, doc_pre_filter=doc_pre_filter) 
                 for repkey in repnodes]
 
-        printd(2, f'Retrieving docs for Bridge {self.name}...')
+        printd(2, f'\n ~~~~ Retrieving docs for Bridge {self.name}...')
         matchfn_key = self.bconfig.matchfn
         if matchfn_key is not None:
             matchfn = load_func(matchfn_key)
@@ -121,15 +124,15 @@ class BridgeRetriever:
         if evalfn_key is not None:
             evalfn = load_func(evalfn_key)
             evalfn(docs, D, query_id=kwargs.get('query_id', None))
-        
+        printd(2, f'\n===== End eval Bridge({self.name}) =====\n')
         return docs
 
        
 class Retriever:
 
-    def __init__(self, rp_config: RPConfig):
+    def __init__(self, rp_config: RPConfig, RM: RepManager = None):
         self.config = rp_config
-        self.RM = get_or_create_rep_manager(rp_config)
+        self.RM = RM or create_rep_manager(rp_config)
     
     def merge_by_expr(self, expr, bridge2docs, merge=None):
         #move to fusion.py?
@@ -165,7 +168,7 @@ class Retriever:
             docs = br.eval(query_text, D, query_id=query_id, doc_pre_filter=doc_pre_filter)
             bridge2results[b] = docs
 
-        print(f'Computing merge {merge}...')   
+        print(f'\n==== Computing merge {merge} ==== ')   
 
         match mp.method:
             case 'reciprocal_rank':
@@ -177,6 +180,9 @@ class Retriever:
                 raise NotImplementedError(f'Unknown merge method : {mp.method}\nmerge_config: {mp}')
         
         doc_with_scores = [d for d in doc_with_scores if d.load_docs(D)]
+
+        print(f'\n==== Done computing merge {merge} ==== \n')   
+
         
         return doc_with_scores
 

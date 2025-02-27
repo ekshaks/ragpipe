@@ -78,6 +78,7 @@ class DocNode(BaseModel):
             return True
         except Exception as e:
             printd(2, f'load:docs -- cannot load {self.doc_path}. {e}')
+            assert False, f'cannot load document {self.doc_path}'
             return False
         #return self
 
