@@ -61,6 +61,31 @@ class Workflow:
             return self.respond(query_text, docs_retrieved, config.prompts['qa'], config.llm_models.__default__) 
         else:
             return docs_retrieved
+    
+    def run_persist_RM(self, respond_flag=False):
+        config, json_path, query_text = self.init()
+        from ragpipe import create_rep_manager
+        RM = create_rep_manager(config) #reuse the same RM across multiple Retriever calls for different queries
+       
+        D = self.build_data_model(json_path)
+        printd(1, '-==== over build data model')
+
+        from ragpipe import Retriever
+        docs_retrieved = Retriever(config, RM=RM).eval(query_text, D)
+        
+        '''
+        # avoid re-creating doc reps for a new query `query_text2`
+        RM.clear_all_reps_fpath('query') # remove all query related representations that may be cached by RM
+        docs_retrieved = Retriever(config, RM=RM).eval(query_text2, D)
+        '''
+
+        printd(1, f'query: {query_text}')
+        for doc in docs_retrieved: doc.show()
+
+        if respond_flag:
+            return self.respond(query_text, docs_retrieved, config.prompts['qa'], config.llm_models.__default__) 
+        else:
+            return docs_retrieved
 
 if __name__ == '__main__':
     Workflow().run()
