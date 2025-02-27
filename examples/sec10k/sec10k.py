@@ -102,13 +102,31 @@ class Workflow:
         #resp = respond_to_contextual_query(query, docs_retrieved, prompt_templ, config=self.config) # to pickup the default model from config.llm_models
         return resp
     
-        # Alternatively, create the prompt manually and call an LLM
-        # from ragpipe.prompts import eval_template
-        # docs_texts = '\n'.join([doc.get_text_content() for doc in docs_retrieved])
-        # prompt = eval_template(prompt_templ, documents=docs_texts, query=query)
-        # from ragpipe.llms import llm_router
-        # resp = llm_router(prompt, model=llm_model)
+    
+    def query_filtered_images(self, image_reps):
+        image_prompt = eval_template(config.prompts['vqa1'], query=query_text)
 
+        vlm = config.etc['use_vlm']
+        if vlm: #use mm llm to extract answer from images
+            ops = DotDict(
+                combined_op= LLMOp(prompt=image_prompt, model=config.llm_models['llmv2'], 
+                                params=DotDict(max_images_per_call=1)
+                )
+            )
+            res = map_agg_vlm(image_reps, ops)
+        else: 
+            # images -> md, then use text llm
+            from ragpipe.ingest.parsers.docling_parser import image2md
+            from ragpipe.llms import llm_router
+
+            with rp_timer("image2md", self.run_data):
+                md_reps = image2md(image_reps)
+            #res = map_agg_llm(query_text, md_reps, ops)
+            md_agg_rep = concat_files(md_reps)
+            prompt = eval_template(config.prompts['qa1'], query=query_text, documents=md_agg_rep)
+            res = llm_router(prompt, model=config.llm_models['__default__'])
+        printd(1, res)
+        return res
 
     def run(self, respond_flag=False):
         config, json_path, query_text = self.init()
@@ -126,36 +144,20 @@ class Workflow:
         image_reps = [DotDict(image_path=doc.get_file_path()) 
                 for doc in docs_retrieved]
         
-        image_prompt = eval_template(config.prompts['vqa1'], query=query_text)
+        if respond_flag:
+            res = self.query_filtered_images(image_reps)
 
-        vlm = config.etc['use_vlm']
-        if vlm: #use mm llm to extract answer from images
-            ops = DotDict(
-                combined_op= LLMOp(prompt=image_prompt, model=config.llm_models['llmv2'], 
-                                params=DotDict(max_images_per_call=1)
-                )
-            )
-            res = map_agg_vlm(image_reps, ops)
-            printd(1, res)
-        else: 
-            # images -> md, then use text llm
-            from ragpipe.ingest.parsers.docling_parser import image2md
-            from ragpipe.llms import llm_router
-
-            with rp_timer("image2md", self.run_data):
-                md_reps = image2md(image_reps)
-            #res = map_agg_llm(query_text, md_reps, ops)
-            md_agg_rep = concat_files(md_reps)
-            prompt = eval_template(config.prompts['qa1'], query=query_text, documents=md_agg_rep)
-            res = llm_router(prompt, model=config.llm_models['__default__'])
-            printd(1, res)
+            gt = ['60,922', '26,974', '26,914']
+            valid = all([g in res for g in gt])
+            print('res valid? ', valid)
+            self.run_data['valid'] = valid
+            with jsonlines.open(config.etc['log_file'], mode='a+') as writer:
+                writer.write(self.run_data)
+        else:
+            printd(1, 'Skipping final answer generation.')
+            res = []
         
-        gt = ['60,922', '26,974', '26,914']
-        valid = all([g in res for g in gt])
-        print('res valid? ', valid)
-        self.run_data['valid'] = valid
-        with jsonlines.open(config.etc['log_file'], mode='a+') as writer:
-            writer.write(self.run_data)
+   
 
 def test_vlm():
     from pathlib import PosixPath

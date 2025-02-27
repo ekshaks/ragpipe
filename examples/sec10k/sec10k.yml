@@ -46,21 +46,6 @@ dbs:
     name: tensordb
 
 encoders:
-  bge_small:
-    name: BAAI/bge-small-en-v1.5
-    query_instruction: "Represent this sentence for searching relevant passages:"
-  
-  bm25:
-    name: bm25
-    with_index: true
-
-  colbert:
-    name: colbert-ir/colbertv2.0 
-  mxlargebin:
-    name: mxlargebin
-    query_instruction: "Represent this sentence for searching relevant passages: "
-    module: ext.libs.mxbai.MXLarge
-    shape: {size: 512, dtype: 'ubinary'}
   colpali:
     name: vidore/colpali-v1.2
     #name: vidore/colqwen2-v1.0
@@ -102,5 +87,4 @@ etc:
 queries:
   - get the revenue, operating income and net income from the income statement for all years
   - query 2
-  - query 3
 
