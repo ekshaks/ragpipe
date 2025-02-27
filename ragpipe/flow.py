@@ -57,7 +57,11 @@ class RepManager:
                 print(f'Defined rep names are: {list(n2r.keys())}')
                 raise e
         
-        return self.reps[repkey]
+        try:
+            return self.reps[repkey]
+        finally:
+            if repkey.startswith('query.text'):
+                del self.reps[repkey] 
 
 
 def create_rep_manager(config: RPConfig): 
