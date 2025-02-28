@@ -16,7 +16,7 @@ class RepManager:
     '''
 
     def __init__(self, config: RPConfig):
-        self.name2repconfig = config.representations
+        self.representations = config.representations
         self.dbs = config.dbs
         self.reps = {}
     
@@ -46,10 +46,13 @@ class RepManager:
         printd(1, f'\n ~~~~ computing reps for {repkey}...')
         if repkey not in self.reps:
             fpath, repname = self.decomp_field_repname(repkey)
-            n2r = self.name2repconfig
+            rep_value = list(self.representations.values())[0]
             try:
                 #printd(1, f'~~~ computing {repkey}')
-                repconfig = n2r[fpath][repname]
+                if isinstance(rep_value, dict): #older style: fpath -> repname -> repconfig (TODO: remove)
+                    repconfig = rep_value[repname]
+                else: #repname -> repconfig
+                    repconfig = rep_value
                 rep = self.create_rep(D, fpath, repname, repconfig, doc_pre_filter=doc_pre_filter)
                 self.reps[repkey] = rep
             except Exception as e:

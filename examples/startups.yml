@@ -46,19 +46,24 @@ encoders:
     name: model2vec
     module: ext.libs.model2vec.Model2Vec
 
+# representations:
+#   query.text:
+#       dense: {encoder: bge_small} 
+#       dense2: {encoder: m2v} 
+#       sparse: {encoder: splade}
+#       densebin: {encoder: mxlargebin}
+
+#   .documents[].description:
+#       dense: {encoder: bge_small} #, store: qdrant}
+#       dense2: {encoder: m2v} 
+#       sparse: {encoder: splade}
+#       densebin: {encoder: mxlargebin}
+
 representations:
-    query.text:
-        dense: {encoder: bge_small} 
-        dense2: {encoder: m2v} 
-        sparse: {encoder: splade}
-        densebin: {encoder: mxlargebin}
-
-    .documents[].description:
-        dense: {encoder: bge_small} #, store: qdrant}
-        dense2: {encoder: m2v} 
-        sparse: {encoder: splade}
-        densebin: {encoder: mxlargebin}
-
+  dense: {encoder: bge_small} 
+  dense2: {encoder: m2v} 
+  sparse: {encoder: splade}
+  densebin: {encoder: mxlargebin}
 
 # bridges:
 #   b_dense:

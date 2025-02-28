@@ -44,19 +44,14 @@ encoders:
     shape: {size: 512, dtype: 'ubinary'}
 
 representations:
-    query.text:
-        dense: {encoder: bge_small}
-        sparse: {encoder: bm25}
-
-    .documents[].description:
-        dense: {encoder: bge_small}
-        sparse: {encoder: bm25}
-
+  dense: {encoder: bge_small}
+  sparse: {encoder: bm25}
 
 bridges:
-  b_dense:
-      repnodes: query.text#dense, .documents[].description#dense
-      limit: 10
+  b:
+    fields: query.text, .documents[].description
+    reps: dense, sparse
+    limit: 10
 
 
 merges:

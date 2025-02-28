@@ -141,7 +141,10 @@ class RPConfig(BaseModel):
     encoders: Optional[Dict[str, EncoderConfig]] = {}
     dbs: Optional[Dict[str, DBConfig]] = {}
     llm_models: Optional[Dict[str, str]] = {}
-    representations: Dict[str,  Dict[str, RepConfig] ] #doc field -> repname -> repconfig 
+
+    representations: Dict[str,  Dict[str, RepConfig] ]  | Dict[str, (str| RepConfig)] # older: doc fpath -> repname -> repconfig | newer: repname -> repconfig | encname 
+    #TODO: remove older style: fpath -> repname -> repconfig
+
     bridges: Dict[str, (BridgeConfig | MultiBridgeConfig)]
     merges: Optional[Dict[str, MergeConfig]] = {}
     enabled_merges: Optional[List] = Field(default_factory=list)
@@ -196,8 +199,14 @@ class RPConfig(BaseModel):
             BM25config = EncoderConfig(name='bm25', with_index=True)
             self.encoders['bm25'] = BM25config
         # replace enc name with enc config
-        for field_rep in self.representations.values():
-            for repname, repconfig in field_rep.items():
+        for rep_value in self.representations.values():
+            if isinstance(rep_value, dict):
+                for repname, repconfig in rep_value.items():
+                    repconfig.update_encoder(self.encoders)
+                    repconfig.update_store(dbs)
+            else:
+                repconfig = rep_value
+                assert isinstance(rep_value, RepConfig)
                 repconfig.update_encoder(self.encoders)
                 repconfig.update_store(dbs)
         
