@@ -79,6 +79,8 @@ class RepConfig(BaseModel):
                 raise e
 
 
+
+
 class BridgeConfig(BaseModel):
     repnodes: List[str] #sparse2, .paras[].text#sparse2
     limit: int
@@ -90,6 +92,29 @@ class BridgeConfig(BaseModel):
     @classmethod
     def split_names(cls, v: FieldInfo):
         return split_str_to_list(v)
+
+
+class MultiBridgeConfig(BaseModel):
+    fields: List[str] #.query, .docs[].text
+    reps: List[str] #sparse, dense, ...
+    limit: Optional[int] = 10
+    evalfn: Optional[str] = None 
+    matchfn: Optional[str] = None
+
+    @field_validator('fields','reps', mode='before')
+    @classmethod
+    def split_names(cls, v: FieldInfo):
+        return split_str_to_list(v)
+
+    def to_bridge_configs(self) -> Dict[str,BridgeConfig]:
+        configs = {}
+        for rep in self.reps:
+            repnodes = [f'{field}#{rep}' for field in self.fields]
+            bc = BridgeConfig(repnodes=repnodes, limit=self.limit,
+                                evalfn=self.evalfn, matchfn=self.matchfn)
+            configs[rep] = bc
+        return configs
+
 
 class MergeConfig(BaseModel):
     limit: int
@@ -117,7 +142,7 @@ class RPConfig(BaseModel):
     dbs: Optional[Dict[str, DBConfig]] = {}
     llm_models: Optional[Dict[str, str]] = {}
     representations: Dict[str,  Dict[str, RepConfig] ] #doc field -> repname -> repconfig 
-    bridges: Dict[str, BridgeConfig]
+    bridges: Dict[str, (BridgeConfig | MultiBridgeConfig)]
     merges: Optional[Dict[str, MergeConfig]] = {}
     enabled_merges: Optional[List] = Field(default_factory=list)
     queries: Optional[List[str]] = []
@@ -138,6 +163,16 @@ class RPConfig(BaseModel):
         llm_models = self.llm_models
         if len(llm_models) == 0:
             llm_models['__default__'] = 'groq/llama3-70b-8192'
+        
+        bridges = self.bridges
+        # convert multibridge configs to dict of bridge configs
+        for b, v in list(bridges.items()):
+            if isinstance(v, MultiBridgeConfig):
+                del bridges[b]
+                new_bridges = v.to_bridge_configs()
+                new_bridges = {f'{b}_{rep}': v for rep, v in new_bridges.items()}
+                #printd(2, 'adding \n', new_bridges)
+                bridges.update(new_bridges)
 
         em = self.enabled_merges
         if len(em) == 0: #no merge selected

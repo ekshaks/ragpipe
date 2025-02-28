@@ -60,19 +60,25 @@ representations:
         densebin: {encoder: mxlargebin}
 
 
+# bridges:
+#   b_dense:
+#       repnodes: query.text#dense, .documents[].description#dense
+#       limit: 10
+#   b_dense2:
+#       repnodes: query.text#dense2, .documents[].description#dense2
+#       limit: 100
+#   b_densebin:
+#       repnodes: query.text#densebin, .documents[].description#densebin
+#       limit: 10
+#   b_sparse:
+#      repnodes: query.text#sparse, .documents[].description#sparse
+#      limit: 10
+
 bridges:
-  b_dense:
-      repnodes: query.text#dense, .documents[].description#dense
-      limit: 10
-  b_dense2:
-      repnodes: query.text#dense2, .documents[].description#dense2
-      limit: 100
-  b_densebin:
-      repnodes: query.text#densebin, .documents[].description#densebin
-      limit: 10
-  b_sparse:
-     repnodes: query.text#sparse, .documents[].description#sparse
-     limit: 10
+  b:
+    fields: query.text, .documents[].description
+    reps: dense, dense2, densebin, sparse
+    limit: 10
 
 
 

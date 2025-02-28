@@ -48,6 +48,7 @@ class RepManager:
             fpath, repname = self.decomp_field_repname(repkey)
             n2r = self.name2repconfig
             try:
+                #printd(1, f'~~~ computing {repkey}')
                 repconfig = n2r[fpath][repname]
                 rep = self.create_rep(D, fpath, repname, repconfig, doc_pre_filter=doc_pre_filter)
                 self.reps[repkey] = rep
@@ -56,6 +57,8 @@ class RepManager:
                 n2r = n2r or {}
                 print(f'Defined rep names are: {list(n2r.keys())}')
                 raise e
+        else:
+            printd(1, f' !! ---> rep {repkey} already computed. Reusing it.')
         
         return self.reps[repkey]
 
