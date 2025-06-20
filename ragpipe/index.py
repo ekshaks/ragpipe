@@ -31,11 +31,11 @@ class IndexConfig(BaseModel):
     def from_kwargs(cls, 
                     encoder_config: EncoderConfig, 
                     storage_config: StorageConfig,
-                    fpath, repname, doc_paths=[]
+                    fpath, repname, doc_paths=[], index_type='rpindex'
                     ) -> 'IndexConfig':
         return cls(
                    encoder_config=encoder_config, storage_config=storage_config,
-                    fpath=fpath, repname=repname, doc_paths=doc_paths
+                    fpath=fpath, repname=repname, doc_paths=doc_paths, index_type=index_type
                    )
  
     
@@ -102,6 +102,41 @@ class RPIndex(BaseIndex): #ragpipe index
         if self.encoder is None:
             self.encoder = get_encoder(self.index_config.encoder_config)
         return self.encoder
+    
+
+    def encode_and_index(self, docset, is_query=False): #TODO: move inside RPIndex
+        #ec = ic.encoder_config
+        #encoder_name = ec.name
+        items = docset.items
+        item_paths = docset.doc_paths
+
+        # if not is_query and ec.with_index:
+        #     print('\n~~~~ encode_and-index ~~~~\n econfig = ', ec)
+        #     match encoder_name:
+        #         case 'bm25':
+        #             from ext.libs.bm25 import RankBM25Index
+        #             print('>>>> **building BM25 Index**')
+        #             reps_index = RankBM25Index(items, item_paths)
+        #         case _:
+        #             if ec.module is not None:
+        #                 Indexer = load_func(ec.module)
+        #                 reps_index = Indexer()
+        #                 reps_index.add(items, item_paths, is_query=is_query)
+        #             else:
+        #                 raise ValueError(f'Unable to find enc-indexer {encoder_name}')
+
+        # else:
+        if not isinstance(items[0], str): #handle LI text nodes. TODO: what if LI documents?
+            item_type = type(items[0]).__name__
+            
+            if 'TextNode' in item_type: #legacy, TODO: remove!
+                items = [item.text for item in items]
+            else:
+                item_type = detect_type(items[0])
+                assert item_type != 'Unknown'
+
+
+        self.add(docs=items, doc_paths=item_paths, is_query=is_query)
 
     def add(self, docs, doc_paths, is_query=False, docs_already_encoded=False):
         self.doc_paths.extend(doc_paths)
@@ -176,7 +211,7 @@ class IndexManager:
         #index_config: IndexConfig = index.get_index_config()
         #print('\n\niconfig', type(index_config), index_config)
         key = index_config.get_uid()
-        printd(2, f' key {key}')
+        printd(2, f'adding key {key}')
         self.cache[key.encode('utf-8')] = index_config
         printd(1, f'IM::add - adding index_config {key}') #{index_config}')
         '''
@@ -198,6 +233,7 @@ class IndexManager:
     def has(self, index_config) :
         # get the index by config
         key = index_config.get_uid()
+        printd(2, f'checking for key {key}')
         try:
             val = self.cache[key.encode('utf-8')]
         except:

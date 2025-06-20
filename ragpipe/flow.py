@@ -16,7 +16,7 @@ class RepManager:
     '''
 
     def __init__(self, config: RPConfig):
-        self.representations = config.representations
+        self.config = config
         self.dbs = config.dbs
         self.reps = {}
     
@@ -44,24 +44,34 @@ class RepManager:
 
     def get_or_create_rep(self, repkey, D, doc_pre_filter=[]):
         printd(1, f'\n ~~~~ computing reps for {repkey}...')
+        CReps = self.config.representations
+        #TODO: turn repkey to doc_paths. hash(doc_paths \int doc_pre_filter), use as hash as key in self.reps
         if repkey not in self.reps:
             fpath, repname = self.decomp_field_repname(repkey)
-            rep_value = list(self.representations.values())[0]
             try:
-                #printd(1, f'~~~ computing {repkey}')
-                if isinstance(rep_value, dict): #older style: fpath -> repname -> repconfig (TODO: remove)
-                    repconfig = rep_value[repname]
-                else: #repname -> repconfig
-                    repconfig = rep_value
+                repconfig = CReps[fpath][repname]
                 rep = self.create_rep(D, fpath, repname, repconfig, doc_pre_filter=doc_pre_filter)
                 self.reps[repkey] = rep
             except Exception as e:
                 print(f'Unable to resolve repkey {repkey}. Did you define rep config for {repkey} correctly?')
-                n2r = n2r or {}
-                print(f'Defined rep names are: {list(n2r.keys())}')
+                if CReps.get(fpath) is None:
+                    print(f'No rep config found for {fpath}.')
+                else:
+                    print(f'Defined rep names for {fpath} are: {list(CReps[fpath].keys())}')
                 raise e
+
+            # rep_value = list(self.representations.values())[0]
+            # try:
+            #     #printd(1, f'~~~ computing {repkey}')
+            #     if isinstance(rep_value, dict): #older style: fpath -> repname -> repconfig (TODO: remove)
+            #         repconfig = rep_value[repname]
+            #     else: #repname -> repconfig
+            #         repconfig = rep_value
+            #     rep = self.create_rep(D, fpath, repname, repconfig, doc_pre_filter=doc_pre_filter)
+            #     self.reps[repkey] = rep
+
         else:
-            printd(1, f' !! ---> rep {repkey} already computed. Reusing it.')
+            printd(1, f' !! ---> rep {repkey} already computed. Reusing it.') 
         
         return self.reps[repkey]
 
@@ -113,7 +123,7 @@ class BridgeRetriever:
 
         # create reps
         reps = [self.RM.get_or_create_rep(repkey, D, doc_pre_filter=doc_pre_filter) 
-                for repkey in repnodes]
+                for repkey in repnodes] #generally only 2 elements in repnodes (query..., doc...)
 
         printd(2, f'\n ~~~~ Retrieving docs for Bridge {self.name}...')
         matchfn_key = self.bconfig.matchfn

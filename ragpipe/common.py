@@ -38,9 +38,12 @@ def load_func(dotpath : str):
 import re
 #TODO: https://github.com/rayokota/jsonata-python
 def compile_jq(expression, data):
-    l1, l2 = 3, 4
+    n = 3
+    l1, l2 = n, n+1
 
-    def prepend_path(item_path_pair, edge):
+    def prepend_path(item_path_pair, edge): 
+        # returns (item, edge.item_path)*
+
         #printd(l1, f'prepend_path, type={type(item_path_pair)}')
         if isinstance(item_path_pair, tuple):
             item, path = item_path_pair
@@ -66,12 +69,18 @@ def compile_jq(expression, data):
             printd(l1, f'obj = {obj[:20]}')  
         '''
 
-
         if isinstance(obj, dict):
             if key in obj:
                 return prepend_path(traverse(obj[key], path[1:]), key)
+            elif key == '[]':
+                item_path_pairs = [prepend_path(
+                                    traverse(item, path[1:]), k
+                                ) 
+                               for k, item in obj.items()]
+                res = [item for sublist in item_path_pairs for item in sublist]
+                return res
             else:
-                raise ValueError(f'Invalid: key = {key}, obj={obj}')
+                raise ValueError(f'Invalid: key = {key}, obj keys={list(obj.keys())}')
         elif isinstance(obj, list):
             if key == '[]':
                 item_path_pairs = [prepend_path(
@@ -108,10 +117,16 @@ def get_fpath_items(fpath, D, docpath_pre_filter=set()):
     if len(docpath_pre_filter) != 0:
         item_path_pairs = [(item, item_path) for item, item_path in item_path_pairs 
                        if item_path in docpath_pre_filter]
-    #print(items[:5])
-    items, item_paths = [list(tupleObj) for tupleObj in zip(*item_path_pairs)]
+    try:
+        items, item_paths = [list(tupleObj) for tupleObj in zip(*item_path_pairs)]
+    except Exception as e:
+        print(f'Error in get_fpath_items: {e}')
+        breakpoint()
+        print(type(item_path_pairs), len(item_path_pairs))
+        raise e
 
-    printd(3, f'get_fpath_items = {type(items)}, {len(items)}')
+    printd(3, f'get_fpath_items = {type(items)}, {len(items)}, {items[:5]}')
+    #quit()
     return DotDict(els=items, paths=item_paths)
 
 def tfm_docpath(path: 'docpath', tfm: str):

@@ -58,6 +58,7 @@ class RepConfig(BaseModel):
     encoder: Union[str, EncoderConfig]
     enabled: Optional[bool] = True
     store: Optional[Union[bool,str,DBConfig]] = False
+    collection: Optional[str] = None
 
     def update_encoder(self, encoders):
         #print('updating RepConfig for ', self.encoder, type(self.encoder))
@@ -148,7 +149,7 @@ class RPConfig(BaseModel):
     bridges: Dict[str, (BridgeConfig | MultiBridgeConfig)]
     merges: Optional[Dict[str, MergeConfig]] = {}
     enabled_merges: Optional[List] = Field(default_factory=list)
-    queries: Optional[List[str]] = []
+    queries: Optional[List[Any]] = []
     etc: Optional[Dict[str,Any]] = {}
 
     @field_validator('enabled_merges', mode='before')

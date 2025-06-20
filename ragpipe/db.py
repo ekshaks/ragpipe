@@ -69,8 +69,8 @@ class TensorCollection:
 from .config import DBConfig
 
 class StorageConfig(BaseModel):
-    db_props: DBConfig
     collection_name: str
+    db_props: Optional[DBConfig] = None
     rep_type: str = 'single_vector'
     size: Optional[int] = 384 #TODO: move this to rep_type config
 
@@ -85,12 +85,15 @@ class StorageConfig(BaseModel):
 
         if isinstance(db_props, bool): #resolve store=True
             dbs = kwargs.pop('dbs')
-            if rep_type == 'single_vector':
-                db_props = dbs['__default_single_vector__']
-            elif rep_type == 'multi_vector':
-                db_props = dbs['__default_multi_vector__']
+            if dbs is not None:
+                if rep_type == 'single_vector':
+                    db_props = dbs['__default_single_vector__']
+                elif rep_type == 'multi_vector':
+                    db_props = dbs['__default_multi_vector__']
+                else:
+                    raise ValueError(f'Invalid rep_type {rep_type}')
             else:
-                raise ValueError(f'Invalid rep_type {rep_type}')
+                db_props = None
         else:
             assert isinstance(db_props, DBConfig), f'unknown db_props type {db_props}'
         
@@ -102,7 +105,8 @@ class StorageConfig(BaseModel):
         #if kwargs['rep_type'] == 'multi_vector':
         #    kwargs['dbname'] = 'tensordb'
         super().__init__(**kwargs)
-        Path(self.db_props.path).mkdir(parents=True, exist_ok=True)
+        if self.db_props is not None:
+            Path(self.db_props.path).mkdir(parents=True, exist_ok=True)
 
 
 class _QdrantDB:
