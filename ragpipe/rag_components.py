@@ -62,7 +62,7 @@ def create_or_load_index(docset: 'DocSet', repname: str, rep_props,
             case 'bm25':
                 from ext.libs.bm25 import RankBM25Index
                 print('>>>> **building BM25 Index**')
-                reps_index = RankBM25Index(items, item_paths, is_query=is_query) #TODO: Needs testing for query and docs cases
+                reps_index = RankBM25Index(docset.items, docset.item_paths, is_query=is_query) #TODO: Needs testing for query and docs cases
             case _:
                 if ec.module is not None:
                     Indexer = load_func(ec.module)
@@ -81,28 +81,6 @@ def create_or_load_index(docset: 'DocSet', repname: str, rep_props,
     
     if store and not im_has_ic:
         IM.add(index_config)
-
-
-
-    #check if index key exists in IM, index created already
-    #note index_config depends on item_paths but storage_config doesn't. 
-    # so can't check storage_collection name exists only
-    # if index_exists: #key exists, load index
-    #     reps_index = RPIndex.from_index_config(index_config)
-    #     printd(2, f'Found in IndexManager cache. {repname}, {encoder_config.name}')
-    #     #print('Index value: ', reps_index)
-    # else: #build reps, create index, if storage_confadd key to IM
-    #     printd(2, f'Not found in IndexManager cache: {repname}, {encoder_config.name}. Creating reps.')
-    #     #TODO: replace as many args by index_config
-    #     #reps_index: '..Index' = encode_and_index(encoder, fpath, repname, items, item_paths,
-    #     #            storage_config, is_query=is_query, index_type='rpindex')
-    #     reps_index = encode_and_index(docset.items, index_config, is_query=is_query)
-        
-    #     if storage_config is not None: #does making a query rpindex make sense? change query?
-    #         printd(2, f'... adding to index.')
-    #         IM.add(index_config)
-    #     else:
-    #         printd(2, f'... not adding to index.')
     
     return reps_index
 
@@ -128,9 +106,7 @@ def retriever_router(doc_index, query_text, query_index, limit=10): #TODO: rep_q
     '''
     Depending on the type of index, retrieve the doc nodes relevant to a query
     '''
-    from llama_index.core import QueryBundle
-    from llama_index.core.retrievers import BaseRetriever, VectorIndexRetriever
-    printd(3, f'retriever_router: doc_index type {type(doc_index)}, {type(query_index)}')
+    printd(2, f'retriever_router: doc_index type {type(doc_index)}, query_index type {type(query_index)}')
     #print(doc_index)
     #print(query_index)
     rep_query = query_index.get_query_rep()

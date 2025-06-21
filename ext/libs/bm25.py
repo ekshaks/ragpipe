@@ -31,13 +31,19 @@ import numpy as np
 #from ragpipe.index import BaseIndex, DEFAULT_LIMIT
 from ragpipe.docnode import ScoreNode
 
-class RankBM25Index:
-    def __init__(self, doc_list, doc_paths) -> None: #expect: doc.get_content() defined
+class RankBM25Index():
+    def __init__(self, doc_list, doc_paths, is_query=False) -> None: #expect: doc.get_content() defined
         self.doc_list = doc_list
         self.doc_paths = doc_paths #
         self._corpus = [self._tokenizer(doc) for doc in doc_list]
         self.bm25 = BM25Okapi(self._corpus)
-        
+        self.is_query = is_query
+    
+    def get_query_rep(self):
+        #print(self.is_query, self.doc_list, self.doc_paths)
+        assert self.is_query, f'cant get rep from non-query index: {self.doc_paths}, {self.__class__}'
+        return self.doc_list[0]
+    
     def _tokenizer(self, text):
         return tokenize_remove_stopwords(text)
     
